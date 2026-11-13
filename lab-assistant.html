@@ -14,57 +14,60 @@
     <!-- DASHBOARD HEADER -->
     <!-- ============================================================= -->
     <header class="dashboard-header">
-        <div class="dashboard-logo">
-            <div class="brand-icon">QR</div>
-            <div class="logo-text-group">
-                <span class="logo-title">PGDAV LabTrack</span>
-                <span class="logo-subtitle" id="assistantLabBadge">Laboratory Assistant</span>
+        <div class="brand-wrapper">
+            <div class="brand-title-group">
+                <h2>PGDAV LabTrack</h2>
+                <p class="brand-tagline">Laboratory Assistant Portal</p>
             </div>
         </div>
 
-        <div class="dashboard-user">
-            <div class="user-avatar" id="assistantAvatar">LA</div>
-            <div class="user-meta">
-                <span class="user-greeting">Welcome,</span>
-                <span class="user-name" id="assistantName">Lab Assistant</span>
-                <span class="badge" id="assistantDepartmentTag" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 11px;">Loading Lab...</span>
+        <div class="header-user-actions">
+            <div class="user-profile-chip">
+                <div class="user-avatar" id="assistantAvatar">LA</div>
+                <div class="user-meta">
+                    <span class="user-meta-name" id="assistantName">Lab Assistant</span>
+                    <span class="user-meta-role" id="assistantLabBadge">Laboratory Assistant</span>
+                </div>
             </div>
-            <button id="logoutBtn" type="button" class="btn btn-outline btn-sm">
+
+            <button id="logoutBtn" class="logout-btn" type="button">
                 Logout
             </button>
         </div>
     </header>
 
-    <!-- ============================================================= -->
-    <!-- NAVIGATION TABS -->
-    <!-- ============================================================= -->
-    <nav class="dashboard-nav" aria-label="Dashboard Tabs">
-        <div class="nav-container">
-            <button type="button" class="tab-btn active" data-tab="tab-overview">
-                <span>Overview</span>
-            </button>
-            <button type="button" class="tab-btn" data-tab="tab-inventory">
-                <span>Lab Inventory</span>
-                <span class="tab-badge" id="tabInventoryBadge">0</span>
-            </button>
-            <button type="button" class="tab-btn" data-tab="tab-requests">
-                <span>Student Requests</span>
-                <span class="tab-badge" id="tabRequestsBadge">0</span>
-            </button>
-            <button type="button" class="tab-btn" data-tab="tab-loans">
-                <span>Active Loans & Returns</span>
-                <span class="tab-badge" id="tabLoansBadge">0</span>
-            </button>
-            <button type="button" class="tab-btn" data-tab="tab-maintenance">
-                <span>Maintenance</span>
-            </button>
-        </div>
-    </nav>
+    <!-- Hidden hook for backward compatibility with department tag -->
+    <span id="assistantDepartmentTag" style="display: none;"></span>
 
     <!-- ============================================================= -->
     <!-- MAIN CONTENT CONTAINER -->
     <!-- ============================================================= -->
     <main class="dashboard-container">
+
+        <!-- Top Title & Subtitle -->
+        <div class="dashboard-heading">
+            <h1 id="overviewLabTitle">Laboratory Assistant Dashboard</h1>
+            <p class="dashboard-subtitle" id="dashboardSubtitle">Departmental Inventory, Requests & Equipment Loans</p>
+        </div>
+
+        <!-- Dashboard Navigation Tabs -->
+        <nav class="tabs-nav" id="assistantTabsNav" aria-label="Dashboard Navigation">
+            <button class="tab-btn active" data-tab="tab-overview" type="button">
+                📊 Overview
+            </button>
+            <button class="tab-btn" data-tab="tab-inventory" type="button">
+                🔬 Lab Inventory <span class="tab-badge" id="tabInventoryBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-requests" type="button">
+                ⏳ Student Requests <span class="tab-badge" id="tabRequestsBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-loans" type="button">
+                🔄 Active Loans & Returns <span class="tab-badge" id="tabLoansBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-maintenance" type="button">
+                🛠️ Maintenance
+            </button>
+        </nav>
 
         <!-- ============================================================= -->
         <!-- TAB 1: OVERVIEW & LAB KPIS -->
@@ -72,8 +75,8 @@
         <section id="tab-overview" class="tab-content-panel active">
             <div class="section-header" style="margin-bottom: 20px;">
                 <div>
-                    <h2 id="overviewLabTitle">Laboratory Department Overview</h2>
-                    <p style="color: var(--slate-500); font-size: 13.5px;">Real-time asset telemetry and borrowing operations for this laboratory.</p>
+                    <h2>Laboratory Metrics & Real-time Status</h2>
+                    <p class="section-description">Live inventory status and pending actions for your department.</p>
                 </div>
             </div>
 
@@ -81,46 +84,36 @@
                 <div class="stat-card variant-total">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Lab Equipment</span>
-                        <div class="stat-card-icon">🖥️</div>
                     </div>
                     <h2 id="statTotalEquipment">0</h2>
-                    <p class="stat-card-meta">Total assets in this lab</p>
                 </div>
 
                 <div class="stat-card variant-available">
                     <div class="stat-card-header">
-                        <span class="stat-card-title">Available in Lab</span>
-                        <div class="stat-card-icon">✓</div>
+                        <span class="stat-card-title">Available</span>
                     </div>
                     <h2 id="statAvailable">0</h2>
-                    <p class="stat-card-meta">Ready for student borrowing</p>
                 </div>
 
                 <div class="stat-card variant-borrowed">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Currently Borrowed</span>
-                        <div class="stat-card-icon">📦</div>
                     </div>
                     <h2 id="statBorrowed">0</h2>
-                    <p class="stat-card-meta">Active student loans</p>
                 </div>
 
                 <div class="stat-card variant-pending">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Pending Requests</span>
-                        <div class="stat-card-icon">⏳</div>
                     </div>
                     <h2 id="statPendingRequests">0</h2>
-                    <p class="stat-card-meta">Awaiting your approval</p>
                 </div>
 
                 <div class="stat-card variant-overdue" id="overdueCard">
                     <div class="stat-card-header">
                         <span class="stat-card-title">Overdue Returns</span>
-                        <div class="stat-card-icon">⚠️</div>
                     </div>
                     <h2 id="statOverdue">0</h2>
-                    <p class="stat-card-meta">Past return schedule</p>
                 </div>
             </div>
 
@@ -226,7 +219,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Student Borrowing Requests</h2>
-                        <p style="font-size: 13px; color: var(--slate-500); margin-top: 4px;">Student requests transferred directly to this laboratory for approval.</p>
                     </div>
                     <div class="section-header-actions">
                         <select id="filterRequestsStatus" class="filter-select">
@@ -282,7 +274,7 @@
                             <option value="Normal">On Schedule</option>
                         </select>
                         <button id="exportLoansBtn" type="button" class="btn btn-outline">
-                            📥 Export Loans CSV
+                            Export Loans CSV
                         </button>
                     </div>
                 </div>
@@ -380,7 +372,8 @@
 
                 <div class="form-group">
                     <label for="category">Laboratory / Category</label>
-                    <input type="text" id="category" readonly style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
+                    <input type="text" id="category" readonly
+                        style="background: var(--slate-100); font-weight: 700; color: var(--primary);">
                 </div>
 
                 <div class="form-group">
@@ -577,21 +570,17 @@
             </div>
 
             <div class="qr-card-preview">
-                <div style="margin-bottom: 8px;">
-                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 11px;">🐍 Generated via Python Backend Service</span>
-                </div>
                 <h3 id="qrEquipmentName">Equipment Name</h3>
                 <p id="qrEquipmentId">ID: LAB001</p>
                 <div id="qrCodeContainer"></div>
-                <p style="font-size: 11px; color: var(--slate-500); margin-top: 8px;">Scan with PGDAV LabTrack to view asset details</p>
             </div>
 
             <div class="qr-actions-row">
                 <button type="button" id="downloadQrBtn" class="btn btn-primary">
-                    📥 Download PNG
+                    Download PNG
                 </button>
                 <button type="button" id="printQrBtn" class="btn btn-outline">
-                    🖨️ Print Label
+                    Print Label
                 </button>
             </div>
         </div>
@@ -605,7 +594,8 @@
                 <button type="button" id="closeScannerBtn">×</button>
             </div>
 
-            <p style="font-size: 13.5px; color: var(--slate-600);">Align equipment QR code within camera view to inspect or issue.</p>
+            <p style="font-size: 13.5px; color: var(--slate-600);">Align equipment QR code within camera view to inspect
+                or issue.</p>
 
             <div class="scanner-viewfinder">
                 <div id="qr-reader"></div>
@@ -632,4 +622,3 @@
 </body>
 
 </html>
-

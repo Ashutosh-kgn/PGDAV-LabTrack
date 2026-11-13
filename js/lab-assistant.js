@@ -451,6 +451,11 @@ function renderEquipmentTable() {
                         <button class="btn btn-primary btn-sm edit-btn" data-id="${escapeHTML(item.documentId)}">
                             Edit
                         </button>
+                        ${item.status === "Available" ? `
+                            <button class="btn btn-success btn-sm issue-btn" data-id="${escapeHTML(item.documentId)}">
+                                Issue
+                            </button>
+                        ` : ''}
                         <button class="btn btn-danger btn-sm delete-btn" data-id="${escapeHTML(item.documentId)}" data-code="${escapeHTML(item.equipmentId)}">
                             Delete
                         </button>
@@ -494,6 +499,14 @@ equipmentTable?.addEventListener("click", async (e) => {
         const docId = qrBtn.dataset.id;
         const item = allEquipment.find(i => i.documentId === docId);
         if (item) openQrModal(item);
+        return;
+    }
+
+    const issueBtn = e.target.closest(".issue-btn");
+    if (issueBtn) {
+        const docId = issueBtn.dataset.id;
+        const item = allEquipment.find(i => i.documentId === docId);
+        if (item) openIssueModal(item);
         return;
     }
 
@@ -1527,6 +1540,135 @@ async function loadApprovedStudentsList() {
     }
 }
 
+// Issue Modal DOM References & Management
+const issueModal = document.getElementById("issueModal");
+const closeIssueModal = document.getElementById("closeIssueModal");
+const issueForm = document.getElementById("issueForm");
+const issueEquipmentDocId = document.getElementById("issueEquipmentDocId");
+const issueEquipmentId = document.getElementById("issueEquipmentId");
+const issueEquipmentName = document.getElementById("issueEquipmentName");
+const issueStudent = document.getElementById("issueStudent");
+const issueDateInput = document.getElementById("issueDate");
+const dueDateInput = document.getElementById("dueDate");
+const confirmIssueBtn = document.getElementById("confirmIssueBtn");
+const issueMessage = document.getElementById("issueMessage");
+
+function openIssueModal(equipment, defaultStudentUid = null) {
+    if (!issueModal) return;
+    if (issueForm) issueForm.reset();
+    if (issueEquipmentDocId) issueEquipmentDocId.value = equipment.documentId;
+    if (issueEquipmentId) issueEquipmentId.value = equipment.equipmentId;
+    if (issueEquipmentName) issueEquipmentName.value = equipment.name;
+
+    const today = new Date().toISOString().split("T")[0];
+    const defaultDue = new Date();
+    defaultDue.setDate(defaultDue.getDate() + 7);
+    const dueStr = defaultDue.toISOString().split("T")[0];
+
+    if (issueDateInput) issueDateInput.value = today;
+    if (dueDateInput) dueDateInput.value = dueStr;
+    if (issueMessage) issueMessage.textContent = "";
+
+    loadApprovedStudentsList(defaultStudentUid);
+    issueModal.style.display = "flex";
+}
+
+closeIssueModal?.addEventListener("click", () => {
+    if (issueModal) issueModal.style.display = "none";
+});
+issueModal?.addEventListener("click", (e) => {
+    if (e.target === issueModal) issueModal.style.display = "none";
+});
+
+if (issueForm) {
+    issueForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const eqDocId = issueEquipmentDocId?.value;
+        const studentUid = issueStudent?.value;
+        const rawIssueDate = issueDateInput?.value;
+        const rawDueDate = dueDateInput?.value;
+
+        if (!eqDocId || !studentUid || !rawIssueDate || !rawDueDate) {
+            showToast("Please fill all issue fields.", "warning");
+            return;
+        }
+
+        if (parseDate(rawDueDate) < parseDate(rawIssueDate)) {
+            showToast("Due date cannot be before issue date.", "warning");
+            return;
+        }
+
+        const formattedIssueDate = formatDate(rawIssueDate);
+        const formattedDueDate = formatDate(rawDueDate);
+
+        if (confirmIssueBtn) confirmIssueBtn.disabled = true;
+        if (issueMessage) {
+            issueMessage.textContent = "Issuing equipment...";
+            issueMessage.style.color = "var(--primary)";
+        }
+
+        try {
+            const equipmentRef = doc(db, "equipment", eqDocId);
+            const studentRef = doc(db, "users", studentUid);
+            const borrowingRef = doc(collection(db, "borrowings"));
+
+            await runTransaction(db, async (transaction) => {
+                const eqSnap = await transaction.get(equipmentRef);
+                const stSnap = await transaction.get(studentRef);
+
+                if (!eqSnap.exists()) throw new Error("Equipment does not exist.");
+                if (!stSnap.exists()) throw new Error("Student record does not exist.");
+
+                const eqData = eqSnap.data();
+                const stData = stSnap.data();
+
+                if (eqData.status !== "Available") {
+                    throw new Error("This equipment is not available for issue.");
+                }
+
+                transaction.set(borrowingRef, {
+                    borrowingId: borrowingRef.id,
+                    equipmentDocId: eqDocId,
+                    equipmentId: eqData.equipmentId,
+                    equipmentName: eqData.name,
+                    category: eqData.category || currentAssistant?.department || "General",
+                    studentUid: studentUid,
+                    studentName: stData.name || "Student",
+                    studentEmail: stData.email || "",
+                    studentRollNo: stData.rollNo || "",
+                    issueDate: formattedIssueDate,
+                    dueDate: formattedDueDate,
+                    status: "Active",
+                    issuedBy: currentAssistant?.name || "Lab Assistant",
+                    issuedByUid: currentAssistant?.uid || "",
+                    createdAt: new Date()
+                });
+
+                transaction.update(equipmentRef, {
+                    status: "Borrowed",
+                    currentBorrowingId: borrowingRef.id,
+                    lastIssuedTo: stData.name || "Student",
+                    lastIssuedDate: formattedIssueDate
+                });
+            });
+
+            showToast("Equipment issued successfully!", "success");
+            if (issueModal) issueModal.style.display = "none";
+            issueForm.reset();
+        } catch (error) {
+            console.error("Issue error:", error);
+            showToast(error.message, "error");
+            if (issueMessage) {
+                issueMessage.textContent = error.message;
+                issueMessage.style.color = "var(--danger)";
+            }
+        } finally {
+            if (confirmIssueBtn) confirmIssueBtn.disabled = false;
+        }
+    });
+}
+
 // Scanned QR Event Listener
 window.addEventListener("labtrack:scanned", (e) => {
     const { equipment, actionsContainer } = e.detail;
@@ -1550,9 +1692,8 @@ window.addEventListener("labtrack:scanned", (e) => {
         issueBtn.textContent = "📋 Issue to Student";
         issueBtn.addEventListener("click", () => {
             document.getElementById("closeScannerBtn")?.click();
-            switchTab("tab-inventory");
             const item = allEquipment.find(i => i.equipmentId === equipment.equipmentId);
-            if (item) openQrModal(item);
+            if (item) openIssueModal(item);
         });
         actionsContainer.appendChild(issueBtn);
     } else if (equipment.status === "Borrowed") {

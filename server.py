@@ -7,13 +7,24 @@ Serves static web files and provides the backend QR generation service for the A
 import os
 import sys
 import json
+import socket
 import urllib.parse
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 from generate_qr import generate_qr_data_url
 
 PORT = int(os.environ.get("PORT", 3000))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+class DualStackServer(ThreadingHTTPServer):
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        try:
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        except (AttributeError, OSError):
+            pass
+        super().server_bind()
 
 class LabTrackHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -70,8 +81,11 @@ class LabTrackHandler(SimpleHTTPRequestHandler):
 
 
 def run_server():
-    server_address = ("127.0.0.1", PORT)
-    httpd = HTTPServer(server_address, LabTrackHandler)
+    try:
+        httpd = DualStackServer(("::", PORT), LabTrackHandler)
+    except Exception:
+        httpd = ThreadingHTTPServer(("0.0.0.0", PORT), LabTrackHandler)
+
     print(f"PGDAV LabTrack Python Server is live at http://localhost:{PORT}/")
     print(f"- Login / Home:         http://localhost:{PORT}/index.html")
     print(f"- Student Sign-Up:      http://localhost:{PORT}/signup.html")

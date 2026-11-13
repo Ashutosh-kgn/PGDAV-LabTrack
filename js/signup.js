@@ -127,7 +127,19 @@ if (signupForm) {
                 createdAt: serverTimestamp()
             };
 
-            await setDoc(doc(db, "users", user.uid), userProfile);
+            try {
+                await setDoc(doc(db, "users", user.uid), userProfile);
+            } catch (permErr) {
+                console.warn("Full profile write failed, attempting minimal fields for legacy rules:", permErr);
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
+                    email: email,
+                    role: "student",
+                    active: false,
+                    status: "pending",
+                    createdAt: serverTimestamp()
+                });
+            }
 
             await signOut(auth);
 

@@ -2010,13 +2010,46 @@ registerAssistantForm?.addEventListener("submit", async (e) => {
             registeredBy: currentUser?.email || "Super Admin"
         };
 
-        // Try writing with admin db first (Super Admin authority)
+        // Attempt 1: Direct write as Super Admin (succeeds if updated rules allow admin create)
+        let writeSuccess = false;
         try {
-            await setDoc(doc(db, "users", userCred.user.uid), assistantData);
+            await setDoc(doc(db, "users", userCred.user.uid), assistantData, { merge: true });
+            writeSuccess = true;
         } catch (adminDbErr) {
-            console.warn("Admin db write attempt failed, trying secDb:", adminDbErr);
-            // Fallback to secondary db (authenticated as assistant)
-            await setDoc(doc(secDb, "users", userCred.user.uid), assistantData);
+            console.warn("Direct admin setDoc failed, attempting compliant 2-step provision:", adminDbErr);
+        }
+
+        // Attempt 2: If direct write was rejected by strict legacy security rules:
+        // Step A: Provision initial stub matching strict legacy user creation rules via secDb
+        // Step B: Super Admin immediately updates/elevates the document via db updateDoc
+        if (!writeSuccess) {
+            try {
+                const existingSnap = await getDoc(doc(secDb, "users", userCred.user.uid));
+                if (!existingSnap.exists()) {
+                    await setDoc(doc(secDb, "users", userCred.user.uid), {
+                        name: name,
+                        email: email,
+                        role: "student",
+                        active: false,
+                        status: "pending",
+                        createdAt: new Date()
+                    });
+                }
+            } catch (stubErr) {
+                console.warn("Stub doc creation error:", stubErr);
+            }
+
+            // Step B: Super Admin elevates profile to approved Lab Assistant
+            await updateDoc(doc(db, "users", userCred.user.uid), {
+                name: name,
+                email: email,
+                role: "lab_assistant",
+                department: department,
+                active: true,
+                status: "approved",
+                approvedAt: new Date(),
+                registeredBy: currentUser?.email || "Super Admin"
+            });
         }
 
         // Cleanly sign out secondary session
