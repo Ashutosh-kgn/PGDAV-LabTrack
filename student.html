@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal | LabTrack</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Main Navigation Bar -->
+    <header class="dashboard-header">
+        <div class="brand-wrapper">
+            <div class="brand-badge">QR</div>
+            <div class="brand-title-group">
+                <h2>LabTrack</h2>
+                <p class="brand-tagline">Student Laboratory Portal</p>
+            </div>
+        </div>
+
+        <div class="header-user-actions">
+            <div class="user-profile-chip">
+                <div class="user-avatar" id="studentAvatar">S</div>
+                <div class="user-meta">
+                    <span class="user-meta-name" id="studentName">Loading student...</span>
+                    <span class="user-meta-role">Approved Student</span>
+                </div>
+            </div>
+
+            <button id="logoutBtn" class="logout-btn" type="button">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <main class="dashboard-container">
+
+        <!-- Top Welcome Banner -->
+        <div class="student-portal-banner">
+            <div>
+                <h2>Welcome to your Lab Portal</h2>
+                <p>Browse laboratory assets, submit equipment requests, and keep track of your active borrowings and due dates.</p>
+            </div>
+            <button id="openScannerBtn" type="button" class="btn btn-success">
+                📷 Scan Equipment QR
+            </button>
+        </div>
+
+        <!-- Metric Statistics Grid -->
+        <div class="stats-container">
+            <div class="stat-card variant-available">
+                <div class="stat-card-header">
+                    <span class="stat-card-title">Available in Lab</span>
+                    <div class="stat-card-icon">🔬</div>
+                </div>
+                <h2 id="availableEquipment">0</h2>
+                <div class="stat-card-footer">Equipment ready to borrow</div>
+            </div>
+
+            <div class="stat-card variant-borrowed">
+                <div class="stat-card-header">
+                    <span class="stat-card-title">My Active Loans</span>
+                    <div class="stat-card-icon">📦</div>
+                </div>
+                <h2 id="myActiveLoansCount">0</h2>
+                <div class="stat-card-footer">Items currently in your custody</div>
+            </div>
+
+            <div class="stat-card variant-pending">
+                <div class="stat-card-header">
+                    <span class="stat-card-title">Pending Requests</span>
+                    <div class="stat-card-icon">⏳</div>
+                </div>
+                <h2 id="myPendingRequestsCount">0</h2>
+                <div class="stat-card-footer">Awaiting laboratory admin review</div>
+            </div>
+
+            <div class="stat-card variant-overdue" id="studentOverdueCard">
+                <div class="stat-card-header">
+                    <span class="stat-card-title">Overdue Items</span>
+                    <div class="stat-card-icon">⚠️</div>
+                </div>
+                <h2 id="myOverdueCount">0</h2>
+                <div class="stat-card-footer">Please return immediately to lab</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav" id="studentTabsNav">
+            <button class="tab-btn active" data-tab="tab-my-loans" type="button">
+                📦 My Borrowed Items <span class="tab-badge" id="tabLoansBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-browse" type="button">
+                🔬 Browse & Request <span class="tab-badge" id="tabBrowseBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-my-requests" type="button">
+                📑 My Requests <span class="tab-badge" id="tabRequestsBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-history" type="button">
+                📜 Borrowing History
+            </button>
+        </nav>
+
+        <!-- ============================================================= -->
+        <!-- TAB 1: MY ACTIVE BORROWED ITEMS -->
+        <!-- ============================================================= -->
+        <section id="tab-my-loans" class="tab-content-panel active">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Currently Borrowed Equipment</h2>
+                        <p>Equipment currently issued to you. Please return on or before the specified due date.</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Equipment Name</th>
+                                <th>Issue Date</th>
+                                <th>Due Date</th>
+                                <th>Time Remaining</th>
+                                <th>Location to Return</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="myActiveBorrowingsTable">
+                            <tr>
+                                <td colspan="6" class="table-empty-state">
+                                    <p>Loading your active borrowings...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 2: BROWSE & REQUEST EQUIPMENT -->
+        <!-- ============================================================= -->
+        <section id="tab-browse" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Laboratory Equipment Catalog</h2>
+                        <p>Explore equipment inventory and submit a borrowing request for your academic coursework.</p>
+                    </div>
+                </div>
+
+                <!-- Search and Category Filters -->
+                <div class="filter-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input
+                            type="text"
+                            id="searchEquipment"
+                            placeholder="Search equipment by name, ID, or lab location..."
+                        >
+                    </div>
+
+                    <select id="filterCategory" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="Computer">Computer</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Other">Other</option>
+                    </select>
+
+                    <select id="filterAvailability" class="filter-select">
+                        <option value="Available">Available Only</option>
+                        <option value="All">All Equipment</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Condition</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="equipmentTable">
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <p>Loading laboratory catalog...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 3: MY REQUESTS -->
+        <!-- ============================================================= -->
+        <section id="tab-my-requests" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>My Borrowing Requests</h2>
+                        <p>Track the approval status of equipment you have requested.</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Equipment Name</th>
+                                <th>Requested Period</th>
+                                <th>Purpose / Lab Course</th>
+                                <th>Submitted On</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="myRequestsTable">
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <p>Loading your requests...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 4: BORROWING HISTORY -->
+        <!-- ============================================================= -->
+        <section id="tab-history" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Past Borrowing Records</h2>
+                        <p>History of equipment you have previously borrowed and returned.</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Equipment Name</th>
+                                <th>Issue Date</th>
+                                <th>Due Date</th>
+                                <th>Return Date</th>
+                                <th>Return Condition</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="myHistoryTable">
+                            <tr>
+                                <td colspan="6" class="table-empty-state">
+                                    <p>No past borrowing history found.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============================================================= -->
+    <!-- MODALS -->
+    <!-- ============================================================= -->
+
+    <!-- Request Equipment Modal -->
+    <div id="requestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Request Equipment</h2>
+                <button type="button" id="closeRequestModal">×</button>
+            </div>
+
+            <form id="requestForm">
+                <input type="hidden" id="requestEquipmentDocId">
+
+                <div class="form-group">
+                    <label>Equipment ID</label>
+                    <input type="text" id="requestEquipmentId" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Equipment Name</label>
+                    <input type="text" id="requestEquipmentName" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Category & Lab Location</label>
+                    <input type="text" id="requestEquipmentMeta" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="requestFromDate">Required From Date</label>
+                    <input type="date" id="requestFromDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="requestToDate">Expected Return Date</label>
+                    <input type="date" id="requestToDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="requestPurpose">Purpose / Course Experiment</label>
+                    <textarea
+                        id="requestPurpose"
+                        rows="3"
+                        placeholder="e.g., Physics Lab 202 - Optics experiment assignment"
+                        required
+                    ></textarea>
+                </div>
+
+                <button type="submit" id="confirmRequestBtn" class="btn btn-primary">
+                    Submit Borrowing Request
+                </button>
+
+                <p id="requestMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content scanner-content">
+            <div class="modal-header">
+                <h2>Equipment QR Scanner</h2>
+                <button type="button" id="closeScannerBtn">×</button>
+            </div>
+
+            <p style="font-size: 13.5px; color: var(--slate-600);">Scan an equipment QR code in the lab to inspect details or request it.</p>
+
+            <div class="scanner-viewfinder">
+                <div id="qr-reader"></div>
+            </div>
+
+            <p id="scannerStatus">Starting camera...</p>
+
+            <div id="scanResult"></div>
+
+            <button type="button" id="stopScannerBtn" class="btn btn-danger">
+                Stop Camera
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script type="module" src="js/student.js"></script>
+
+</body>
+</html>

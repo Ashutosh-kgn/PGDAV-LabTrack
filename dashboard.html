@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | LabTrack</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Main Navigation Bar -->
+    <header class="dashboard-header">
+        <div class="brand-wrapper">
+            <div class="brand-title-group">
+                <h2>LabTrack</h2>
+                <p class="brand-tagline">Laboratory Equipment Management</p>
+            </div>
+        </div>
+
+        <div class="header-user-actions">
+            <div class="user-profile-chip">
+                <div class="user-avatar" id="adminAvatar">A</div>
+                <div class="user-meta">
+                    <span class="user-meta-name" id="adminName">Loading admin...</span>
+                    <span class="user-meta-role">Administrator</span>
+                </div>
+            </div>
+
+            <button id="logoutBtn" class="logout-btn" type="button">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <main class="dashboard-container">
+
+        <!-- Top Title & Subtitle -->
+        <div class="dashboard-heading">
+            <h1>Admin Dashboard</h1>
+            <p class="dashboard-subtitle">Welcome, Lab Administrator</p>
+        </div>
+
+        <!-- Dashboard Navigation Tabs -->
+        <nav class="tabs-nav" id="adminTabsNav">
+            <button class="tab-btn active" data-tab="tab-overview" type="button">
+                📊 Overview
+            </button>
+            <button class="tab-btn" data-tab="tab-inventory" type="button">
+                🔬 Inventory <span class="tab-badge" id="tabInventoryCount">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-requests" type="button">
+                ⏳ Requests <span class="tab-badge" id="tabRequestsBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-loans" type="button">
+                🔄 Active Loans <span class="tab-badge" id="tabLoansBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-maintenance" type="button">
+                🛠️ Maintenance <span class="tab-badge" id="tabMaintenanceBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-students" type="button">
+                👥 Students <span class="tab-badge" id="tabStudentsBadge">0</span>
+            </button>
+        </nav>
+
+        <!-- ============================================================= -->
+        <!-- TAB 1: OVERVIEW -->
+        <!-- ============================================================= -->
+        <section id="tab-overview" class="tab-content-panel active">
+            <!-- Metrics Grid -->
+            <div class="stats-container">
+                <div class="stat-card variant-total">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Total Equipment</span>
+                    </div>
+                    <h2 id="totalEquipment">0</h2>
+                </div>
+
+                <div class="stat-card variant-available">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Available</span>
+
+                    </div>
+                    <h2 id="availableEquipment">0</h2>
+
+                </div>
+
+                <div class="stat-card variant-borrowed">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Borrowed</span>
+
+                    </div>
+                    <h2 id="borrowedEquipment">0</h2>
+                </div>
+
+                <div class="stat-card variant-maintenance">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Maintenance</span>
+
+                    </div>
+                    <h2 id="maintenanceEquipment">0</h2>
+                </div>
+
+                <div class="stat-card variant-overdue" id="overdueCard">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Overdue Items</span>
+
+                    </div>
+                    <h2 id="overdueEquipment">0</h2>
+
+                </div>
+
+                <div class="stat-card variant-pending">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Pending Approvals</span>
+
+                    </div>
+                    <h2 id="overviewPendingStudents">0</h2>
+
+                </div>
+            </div>
+
+            <!-- Quick Action Hub -->
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Quick Actions</h2>
+                        <p>Frequently used laboratory administrative actions.</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-primary" id="overviewAddBtn">
+                        + Add New Equipment
+                    </button>
+                    <button type="button" class="btn btn-success" id="overviewScanBtn">
+                        📷 Scan Equipment QR
+                    </button>
+                    <button type="button" class="btn btn-warning" id="overviewReportMaintenanceBtn">
+                        ⚙️ Report Maintenance
+                    </button>
+                    <button type="button" class="btn btn-outline" id="overviewExportCsvBtn">
+                        📥 Export Inventory CSV
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 2: EQUIPMENT INVENTORY -->
+        <!-- ============================================================= -->
+        <section id="tab-inventory" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Equipment Inventory</h2>
+                        <p>Complete laboratory catalog with real-time availability and QR tracking.</p>
+                    </div>
+
+                    <div class="section-header-actions">
+                        <button id="addEquipmentBtn" type="button" class="btn btn-primary">
+                            + Add Equipment
+                        </button>
+                        <button id="openScannerBtn" type="button" class="btn btn-success">
+                            📷 Scan QR
+                        </button>
+                        <button id="exportInventoryBtn" type="button" class="btn btn-outline">
+                            📥 Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Multi-Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchEquipment"
+                            placeholder="Search by equipment name, ID, or location...">
+                    </div>
+
+                    <select id="filterCategory" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="Computer">Computer</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Other">Other</option>
+                    </select>
+
+                    <select id="filterStatus" class="filter-select">
+                        <option value="">All Statuses</option>
+                        <option value="Available">Available</option>
+                        <option value="Borrowed">Borrowed</option>
+                        <option value="Under Maintenance">Under Maintenance</option>
+                    </select>
+
+                    <select id="filterCondition" class="filter-select">
+                        <option value="">All Conditions</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                </div>
+
+                <!-- Table Container -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Condition</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="equipmentTable">
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <p>Loading laboratory inventory...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 3: BORROWING REQUESTS (STUDENT REQUESTS) -->
+        <!-- ============================================================= -->
+        <section id="tab-requests" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Student Borrowing Requests</h2>
+                        <p>Review and authorize equipment requests submitted by approved students.</p>
+                    </div>
+                    <div class="section-header-actions">
+                        <select id="filterRequestsStatus" class="filter-select">
+                            <option value="Pending">Pending Only</option>
+                            <option value="All">All Requests</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Equipment</th>
+                                <th>Category</th>
+                                <th>Requested Period</th>
+                                <th>Purpose / Course</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="borrowingRequestsTable">
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <p>Loading student borrowing requests...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 4: ACTIVE BORROWINGS & OVERDUE -->
+        <!-- ============================================================= -->
+        <section id="tab-loans" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Active Borrowings & Returns</h2>
+                        <p>Track currently issued lab equipment, monitor due dates, and process returns.</p>
+                    </div>
+
+                    <div class="section-header-actions">
+                        <select id="filterLoansStatus" class="filter-select">
+                            <option value="All">All Active Loans</option>
+                            <option value="Overdue">Overdue Only</option>
+                            <option value="Normal">On Schedule</option>
+                        </select>
+                        <button id="exportLoansBtn" type="button" class="btn btn-outline">
+                            📥 Export Loans CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Equipment Name</th>
+                                <th>Student Name</th>
+                                <th>Issue Date</th>
+                                <th>Due Date</th>
+                                <th>Loan Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="activeBorrowingsTable">
+                            <tr>
+                                <td colspan="7" class="table-empty-state">
+                                    <p>Loading active borrowings...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 5: MAINTENANCE MANAGEMENT -->
+        <!-- ============================================================= -->
+        <section id="tab-maintenance" class="tab-content-panel">
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Maintenance & Repairs</h2>
+                        <p>Log equipment issues, track repair progress, and restore equipment to active inventory.</p>
+                    </div>
+
+                    <button id="reportMaintenanceBtn" type="button" class="btn btn-warning">
+                        + Report Maintenance Issue
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipment ID</th>
+                                <th>Equipment Name</th>
+                                <th>Issue Description</th>
+                                <th>Report Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="maintenanceTable">
+                            <tr>
+                                <td colspan="6" class="table-empty-state">
+                                    <p>No maintenance records found.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- TAB 6: STUDENT MANAGEMENT -->
+        <!-- ============================================================= -->
+        <section id="tab-students" class="tab-content-panel">
+            <!-- Pending Student Approvals -->
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Pending Student Registrations</h2>
+                        <p>Review new student account requests before granting laboratory access.</p>
+                    </div>
+                    <span id="pendingStudentCount" class="badge badge-pending">0 Pending</span>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="pendingStudentsTable">
+                            <tr>
+                                <td colspan="4" class="table-empty-state">
+                                    <p>Loading pending student requests...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approved Students Directory -->
+            <div class="equipment-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Approved Students Directory</h2>
+                        <p>Active students authorized to request and borrow laboratory equipment.</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th>Account Status</th>
+                                <th>Active Loans</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="approvedStudentsTable">
+                            <tr>
+                                <td colspan="4" class="table-empty-state">
+                                    <p>Loading approved students...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============================================================= -->
+    <!-- MODALS -->
+    <!-- ============================================================= -->
+
+    <!-- Add/Edit Equipment Modal -->
+    <div id="equipmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="equipmentModalTitle">Add New Equipment</h2>
+                <button type="button" id="closeModal">×</button>
+            </div>
+
+            <form id="equipmentForm">
+                <div class="form-group">
+                    <label for="equipmentId">Equipment ID</label>
+                    <input type="text" id="equipmentId" placeholder="Example: LAB001" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="equipmentName">Equipment Name</label>
+                    <input type="text" id="equipmentName" placeholder="Example: Digital Oscilloscope" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Computer">Computer</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Location / Shelf</label>
+                    <input type="text" id="location" placeholder="Example: Lab 101 - Rack B" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="condition">Condition</label>
+                    <select id="condition" required>
+                        <option value="">Select Condition</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="saveEquipmentBtn" class="btn btn-primary">
+                    Save Equipment
+                </button>
+
+                <p id="equipmentMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Issue Equipment Modal -->
+    <div id="issueModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Issue Equipment</h2>
+                <button type="button" id="closeIssueModal">×</button>
+            </div>
+
+            <form id="issueForm">
+                <input type="hidden" id="issueEquipmentDocId">
+
+                <div class="form-group">
+                    <label>Equipment ID</label>
+                    <input type="text" id="issueEquipmentId" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Equipment Name</label>
+                    <input type="text" id="issueEquipmentName" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="issueStudent">Select Student</label>
+                    <select id="issueStudent" required>
+                        <option value="">Loading students...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="issueDate">Issue Date</label>
+                    <input type="date" id="issueDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="dueDate">Due Date</label>
+                    <input type="date" id="dueDate" required>
+                </div>
+
+                <button type="submit" id="confirmIssueBtn" class="btn btn-primary">
+                    Confirm Issue
+                </button>
+
+                <p id="issueMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Process Return Modal -->
+    <div id="returnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Process Equipment Return</h2>
+                <button type="button" id="closeReturnModal">×</button>
+            </div>
+
+            <form id="returnForm">
+                <input type="hidden" id="returnBorrowingId">
+                <input type="hidden" id="returnEquipmentDocId">
+
+                <div class="form-group">
+                    <label>Equipment</label>
+                    <input type="text" id="returnEquipmentInfo" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Student</label>
+                    <input type="text" id="returnStudentInfo" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="returnCondition">Condition Upon Return</label>
+                    <select id="returnCondition" required>
+                        <option value="Good">Good (Ready for next use)</option>
+                        <option value="Fair">Fair (Operational with minor wear)</option>
+                        <option value="Damaged">Damaged (Requires maintenance)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="returnNotes">Return Notes (Optional)</label>
+                    <textarea id="returnNotes" rows="2"
+                        placeholder="Any comments or observations on return condition..."></textarea>
+                </div>
+
+                <button type="submit" id="confirmReturnBtn" class="btn btn-success">
+                    Confirm Return
+                </button>
+
+                <p id="returnMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reject Request Modal -->
+    <div id="rejectRequestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reject Borrowing Request</h2>
+                <button type="button" id="closeRejectRequestModal">×</button>
+            </div>
+
+            <form id="rejectRequestForm">
+                <input type="hidden" id="rejectRequestId">
+
+                <div class="form-group">
+                    <label>Equipment & Student</label>
+                    <input type="text" id="rejectRequestSummary" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="rejectionReason">Reason for Rejection</label>
+                    <textarea id="rejectionReason" rows="3"
+                        placeholder="Provide a reason (e.g., equipment reserved for lab session)..."
+                        required></textarea>
+                </div>
+
+                <button type="submit" id="confirmRejectBtn" class="btn btn-danger">
+                    Reject Request
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Maintenance Modal -->
+    <div id="maintenanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Report Maintenance Issue</h2>
+                <button type="button" id="closeMaintenanceModal">×</button>
+            </div>
+
+            <form id="maintenanceForm">
+                <div class="form-group">
+                    <label for="maintenanceEquipmentSelect">Select Equipment</label>
+                    <select id="maintenanceEquipmentSelect" required>
+                        <option value="">Select Equipment</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="maintenanceDescription">Issue Description</label>
+                    <textarea id="maintenanceDescription"
+                        placeholder="Describe the equipment malfunction or required service..." rows="3"
+                        required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="maintenanceDate">Report Date</label>
+                    <input type="date" id="maintenanceDate" required>
+                </div>
+
+                <button type="submit" id="saveMaintenanceBtn" class="btn btn-warning">
+                    Submit Maintenance Report
+                </button>
+
+                <p id="maintenanceMessage"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Equipment QR Code Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content qr-content">
+            <div class="modal-header">
+                <h2>Equipment QR Code</h2>
+                <button type="button" id="closeQrModal">×</button>
+            </div>
+
+            <div class="qr-card-preview">
+                <h3 id="qrEquipmentName">Equipment Name</h3>
+                <p id="qrEquipmentId">ID: LAB001</p>
+                <div id="qrCodeContainer"></div>
+                <p style="font-size: 11px; color: var(--slate-500); margin-top: 8px;">Scan with LabTrack to view asset
+                    details</p>
+            </div>
+
+            <div class="qr-actions-row">
+                <button type="button" id="downloadQrBtn" class="btn btn-primary">
+                    📥 Download PNG
+                </button>
+                <button type="button" id="printQrBtn" class="btn btn-outline">
+                    🖨️ Print Label
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content scanner-content">
+            <div class="modal-header">
+                <h2>Equipment QR Scanner</h2>
+                <button type="button" id="closeScannerBtn">×</button>
+            </div>
+
+            <p style="font-size: 13.5px; color: var(--slate-600);">Align equipment QR code within camera view or search
+                manually.</p>
+
+            <div class="scanner-viewfinder">
+                <div id="qr-reader"></div>
+            </div>
+
+            <p id="scannerStatus">Starting camera...</p>
+
+            <div id="scanResult"></div>
+
+            <button type="button" id="stopScannerBtn" class="btn btn-danger">
+                Stop Camera
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
+
+</body>
+
+</html>

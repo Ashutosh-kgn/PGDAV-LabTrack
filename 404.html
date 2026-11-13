@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found | LabTrack</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .error-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+        }
+        .error-card {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 48px 36px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--slate-200);
+        }
+        .error-code {
+            font-size: 72px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .error-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 12px;
+        }
+        .error-desc {
+            font-size: 14px;
+            color: var(--slate-600);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="brand" style="justify-content: center; margin-bottom: 24px;">
+                <div class="brand-icon">QR</div>
+                <h1>LabTrack</h1>
+            </div>
+            <div class="error-code">404</div>
+            <h2 class="error-title">Page Not Found</h2>
+            <p class="error-desc">The laboratory page you are trying to reach does not exist or has been relocated.</p>
+            <a href="index.html" class="btn btn-primary" style="display: inline-block;">
+                Return to Login
+            </a>
+        </div>
+    </div>
+</body>
+</html>
