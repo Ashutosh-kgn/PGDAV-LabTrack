@@ -19,7 +19,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
 // Firebase Configuration
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: "AIzaSyDhdxo5xY_b3I7j5JSFZRFY6kO5jq5EMI0",
     authDomain: "qr-based-project.firebaseapp.com",
     projectId: "qr-based-project",
@@ -112,54 +112,24 @@ function validatePasswordMatching() {
 signupPasswordInput?.addEventListener("input", validatePasswordMatching);
 confirmPasswordInput?.addEventListener("input", validatePasswordMatching);
 
-// Role switching in signup form
-const signupRole = document.getElementById("signupRole");
-const signupDepartmentGroup = document.getElementById("signupDepartmentGroup");
-const signupDepartmentSelect = document.getElementById("signupDepartment");
-const signupRollNoGroup = document.getElementById("signupRollNoGroup");
-const signupCourseGroup = document.getElementById("signupCourseGroup");
-const signupHeaderTitle = document.getElementById("signupHeaderTitle");
-const signupHeaderSubtitle = document.getElementById("signupHeaderSubtitle");
-const signupBtn = document.getElementById("signupBtn");
-
-signupRole?.addEventListener("change", () => {
-    const isAssistant = signupRole.value === "lab_assistant";
-    if (signupDepartmentGroup) signupDepartmentGroup.style.display = isAssistant ? "block" : "none";
-    if (signupRollNoGroup) signupRollNoGroup.style.display = isAssistant ? "none" : "block";
-    if (signupCourseGroup) signupCourseGroup.style.display = isAssistant ? "none" : "block";
-
-    if (signupHeaderTitle) signupHeaderTitle.textContent = isAssistant ? "Lab Assistant Registration" : "Student Sign Up";
-    if (signupHeaderSubtitle) signupHeaderSubtitle.textContent = isAssistant ? "Register to manage your departmental laboratory." : "Create your LabTrack student account.";
-    if (signupBtn) signupBtn.textContent = isAssistant ? "Register as Lab Assistant" : "Create Student Account";
-});
-
-// Signup Handler
+// Signup Handler (Students Only)
 const signupForm = document.getElementById("signupForm");
+const signupBtn = document.getElementById("signupBtn");
 
 if (signupForm) {
     signupForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const role = signupRole ? signupRole.value : "student";
         const name = document.getElementById("signupName").value.trim();
+        const rollNo = document.getElementById("signupRollNo")?.value.trim() || "";
+        const course = document.getElementById("signupCourse")?.value.trim() || "";
         const email = document.getElementById("signupEmail").value.trim().toLowerCase();
         const password = document.getElementById("signupPassword").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
-
-        const rollNo = document.getElementById("signupRollNo")?.value.trim() || "";
-        const course = document.getElementById("signupCourse")?.value.trim() || "";
-        const department = signupDepartmentSelect?.value.trim() || "";
-
         const signupMessage = document.getElementById("signupMessage");
 
-        if (role === "student" && (!rollNo || !course)) {
-            signupMessage.textContent = "Please fill in your College Roll Number and Course.";
-            signupMessage.style.color = "var(--danger)";
-            return;
-        }
-
-        if (role === "lab_assistant" && !department) {
-            signupMessage.textContent = "Please select your assigned laboratory.";
+        if (!name || !rollNo || !course) {
+            signupMessage.textContent = "Please fill in your Full Name, College Roll Number, and Course.";
             signupMessage.style.color = "var(--danger)";
             return;
         }
@@ -192,7 +162,7 @@ if (signupForm) {
         }
 
         signupBtn.disabled = true;
-        signupMessage.textContent = role === "lab_assistant" ? "Registering Lab Assistant profile..." : "Creating student account...";
+        signupMessage.textContent = "Creating student account...";
         signupMessage.style.color = "var(--primary)";
 
         try {
@@ -207,26 +177,19 @@ if (signupForm) {
             const userProfile = {
                 name: name,
                 email: email,
-                role: role,
+                role: "student",
+                rollNo: rollNo,
+                course: course,
                 active: false,
                 status: "pending",
                 createdAt: serverTimestamp()
             };
 
-            if (role === "student") {
-                userProfile.rollNo = rollNo;
-                userProfile.course = course;
-            } else if (role === "lab_assistant") {
-                userProfile.department = department;
-            }
-
             await setDoc(doc(db, "users", user.uid), userProfile);
 
             await signOut(auth);
 
-            signupMessage.textContent = role === "lab_assistant"
-                ? `Registration successful for ${department}! Your account is pending Super-Admin approval.`
-                : "Registration successful! Please wait for admin approval.";
+            signupMessage.textContent = "Registration successful! Please wait for admin approval.";
             signupMessage.style.color = "var(--success)";
 
             signupForm.reset();

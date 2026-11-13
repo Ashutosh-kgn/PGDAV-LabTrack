@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | LabTrack</title>
+    <title>PGDAV LabTrack | Super Admin Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -14,7 +14,7 @@
     <header class="dashboard-header">
         <div class="brand-wrapper">
             <div class="brand-title-group">
-                <h2>LabTrack</h2>
+                <h2>PGDAV LabTrack</h2>
                 <p class="brand-tagline">Laboratory Equipment Management</p>
             </div>
         </div>
@@ -439,44 +439,16 @@
                 </div>
             </div>
 
-            <!-- Pending Lab Assistant Approvals -->
+            <!-- Lab Assistants Management (Provisioned by Super Admin) -->
             <div class="equipment-section" style="margin-top: 2rem;">
                 <div class="section-header">
                     <div>
-                        <h2>Pending Lab Assistant Registrations</h2>
+                        <h2>Lab Assistants Directory</h2>
+                        <p style="color: var(--slate-500); font-size: 13px; margin-top: 3px;">Registered and managed directly by Super Admin</p>
                     </div>
-                    <span id="pendingAssistantCount" class="badge badge-pending">0 Pending</span>
-                </div>
-
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Assistant Name</th>
-                                <th>Assigned Laboratory</th>
-                                <th>Email</th>
-                                <th>Registration Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="pendingAssistantsTable">
-                            <tr>
-                                <td colspan="5" class="table-empty-state">
-                                    <p>Loading pending lab assistant requests...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Approved Lab Assistants Directory -->
-            <div class="equipment-section" style="margin-top: 2rem;">
-                <div class="section-header">
-                    <div>
-                        <h2>Approved Lab Assistants Directory</h2>
-                    </div>
+                    <button id="openRegisterAssistantBtn" type="button" class="btn btn-primary">
+                        + Register New Lab Assistant
+                    </button>
                 </div>
 
                 <div class="table-container">
@@ -494,7 +466,7 @@
                         <tbody id="approvedAssistantsTable">
                             <tr>
                                 <td colspan="5" class="table-empty-state">
-                                    <p>Loading approved lab assistants...</p>
+                                    <p>Loading lab assistants...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -738,7 +710,7 @@
                 <h3 id="qrEquipmentName">Equipment Name</h3>
                 <p id="qrEquipmentId">ID: LAB001</p>
                 <div id="qrCodeContainer"></div>
-                <p style="font-size: 11px; color: var(--slate-500); margin-top: 8px;">Scan with LabTrack to view asset
+                <p style="font-size: 11px; color: var(--slate-500); margin-top: 8px;">Scan with PGDAV LabTrack to view asset
                     details</p>
             </div>
 
@@ -775,6 +747,56 @@
             <button type="button" id="stopScannerBtn" class="btn btn-danger">
                 Stop Camera
             </button>
+        </div>
+    </div>
+
+    <!-- Register Lab Assistant Modal -->
+    <div id="registerAssistantModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Register New Lab Assistant</h2>
+                <button type="button" id="closeRegisterAssistantModal">×</button>
+            </div>
+
+            <form id="registerAssistantForm">
+                <div class="form-group">
+                    <label for="assistantRegName">Full Name</label>
+                    <input type="text" id="assistantRegName" placeholder="Enter assistant's full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="assistantRegDepartment">Assigned Laboratory</label>
+                    <select id="assistantRegDepartment" required>
+                        <option value="">Select Laboratory</option>
+                        <option value="Computer Science Lab">Computer Science Lab</option>
+                        <option value="Commerce Lab">Commerce Lab</option>
+                        <option value="Statistics Lab">Statistics Lab</option>
+                        <option value="Environmental Science Lab">Environmental Science Lab</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="assistantRegEmail">Official Email Address</label>
+                    <input type="email" id="assistantRegEmail" placeholder="Enter official email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="assistantRegPassword">Temporary Password</label>
+                    <div class="input-password-wrapper">
+                        <input type="password" id="assistantRegPassword" placeholder="Create temporary login password (min 6 chars)" minlength="6" required>
+                        <button type="button" class="toggle-password-btn" id="toggleRegAssistantPassword" title="Show/Hide password">👁️</button>
+                    </div>
+                    <div class="password-constraint-hint" style="font-size: 11.5px; color: var(--slate-500); margin-top: 4px;">
+                        Must be at least 6 characters with a letter and a number.
+                    </div>
+                </div>
+
+                <button type="submit" id="saveAssistantBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                    Register & Activate Assistant
+                </button>
+
+                <p id="assistantRegMessage" style="text-align: center; margin-top: 10px; font-size: 13px; font-weight: 600;"></p>
+            </form>
         </div>
     </div>
 

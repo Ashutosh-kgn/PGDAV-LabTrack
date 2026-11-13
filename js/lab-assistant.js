@@ -632,7 +632,7 @@ document.getElementById("exportInventoryBtn")?.addEventListener("click", () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `LabTrack-Inventory-${(currentAssistant?.department || "Lab").replace(/\s+/g, "_")}.csv`;
+    a.download = `PGDAV-LabTrack-Inventory-${(currentAssistant?.department || "Lab").replace(/\s+/g, "_")}.csv`;
     a.click();
     showToast("Laboratory CSV exported successfully!", "success");
 });
@@ -714,7 +714,7 @@ downloadQrBtn?.addEventListener("click", () => {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `LabTrack-QR-${currentQrEquipment.equipmentId}.png`;
+    a.download = `PGDAV-LabTrack-QR-${currentQrEquipment.equipmentId}.png`;
     a.click();
     showToast("QR code downloaded successfully!", "success");
 });
@@ -811,7 +811,7 @@ printQrBtn?.addEventListener("click", () => {
                     <div><strong>Location:</strong> ${escapeHTML(currentQrEquipment.location || "N/A")}</div>
                     <div><strong>Condition:</strong> ${escapeHTML(currentQrEquipment.condition || "Good")}</div>
                 </div>
-                <div class="label-footer">LabTrack Asset Tag • Python QR Backend Service</div>
+                <div class="label-footer">PGDAV LabTrack Asset Tag • Python QR Backend Service</div>
             </div>
             <script>
                 window.onload = function() {
@@ -1316,7 +1316,7 @@ document.getElementById("exportLoansBtn")?.addEventListener("click", () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `LabTrack-Active-Loans-${(currentAssistant?.department || "Lab").replace(/\s+/g, "_")}.csv`;
+    a.download = `PGDAV-LabTrack-Active-Loans-${(currentAssistant?.department || "Lab").replace(/\s+/g, "_")}.csv`;
     a.click();
     showToast("Loans CSV exported successfully!", "success");
 });
@@ -1569,3 +1569,4 @@ window.addEventListener("labtrack:scanned", (e) => {
         }
     }
 });
+

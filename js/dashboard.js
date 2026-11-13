@@ -1,8 +1,12 @@
-import { auth, db, isAuthorizedEmail } from "./app.js";
+import { auth, db, isAuthorizedEmail, firebaseConfig } from "./app.js";
 import { initQrScanner } from "./scanner.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
     onAuthStateChanged,
-    signOut
+    signOut,
+    getAuth,
+    createUserWithEmailAndPassword,
+    signOut as secondarySignOut
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import {
     doc,
@@ -318,7 +322,6 @@ function updateDashboardStats() {
 
     const pendingRequestsCount = allRequests.filter(r => r.status === "Pending").length;
     const pendingStudentsCount = allStudents.filter(s => s.role === "student" && s.status === "pending").length;
-    const pendingAssistantsCount = allStudents.filter(s => s.role === "lab_assistant" && s.status === "pending").length;
 
     // Text Content Updates
     const totalEl = document.getElementById("totalEquipment");
@@ -366,9 +369,8 @@ function updateDashboardStats() {
 
     const studBadge = document.getElementById("tabStudentsBadge");
     if (studBadge) {
-        const totalPendingUsers = pendingStudentsCount + pendingAssistantsCount;
-        studBadge.textContent = totalPendingUsers;
-        if (totalPendingUsers > 0) {
+        studBadge.textContent = pendingStudentsCount;
+        if (pendingStudentsCount > 0) {
             studBadge.classList.add("badge-alert");
         } else {
             studBadge.classList.remove("badge-alert");
@@ -742,7 +744,7 @@ downloadQrBtn?.addEventListener("click", () => {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `LabTrack-QR-${currentQrEquipment.equipmentId}.png`;
+    a.download = `PGDAV-LabTrack-QR-${currentQrEquipment.equipmentId}.png`;
     a.click();
     showToast("QR code downloaded successfully!", "success");
 });
@@ -839,7 +841,7 @@ printQrBtn?.addEventListener("click", () => {
                     <div><strong>Location:</strong> ${escapeHTML(currentQrEquipment.location || "N/A")}</div>
                     <div><strong>Condition:</strong> ${escapeHTML(currentQrEquipment.condition || "Good")}</div>
                 </div>
-                <div class="label-footer">LabTrack Asset Tag • Python QR Backend Service</div>
+                <div class="label-footer">PGDAV LabTrack Asset Tag • Python QR Backend Service</div>
             </div>
             <script>
                 window.onload = function() {
@@ -1813,54 +1815,14 @@ function renderStudentManagement() {
         }
     }
 
-    // 3. Pending Lab Assistants
-    const pendingAssistants = allStudents.filter(s => s.role === "lab_assistant" && s.status === "pending");
-    if (pendingAssistantCount) {
-        pendingAssistantCount.textContent = `${pendingAssistants.length} Pending`;
-    }
-
-    if (pendingAssistantsTable) {
-        if (pendingAssistants.length === 0) {
-            pendingAssistantsTable.innerHTML = `
-                <tr>
-                    <td colspan="5" class="table-empty-state">
-                        <p>No pending lab assistant registration requests.</p>
-                    </td>
-                </tr>
-            `;
-        } else {
-            pendingAssistantsTable.innerHTML = pendingAssistants.map(a => {
-                const regDate = formatDate(a.createdAt);
-                return `
-                    <tr>
-                        <td><strong>${escapeHTML(a.name || "Lab Assistant")}</strong></td>
-                        <td><span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight: 600;">${escapeHTML(a.department || "Unassigned")}</span></td>
-                        <td>${escapeHTML(a.email || "N/A")}</td>
-                        <td>${regDate}</td>
-                        <td>
-                            <div class="action-btn-group">
-                                <button class="approve-assistant-btn" data-uid="${escapeHTML(a.uid)}">
-                                    Approve
-                                </button>
-                                <button class="reject-assistant-btn" data-uid="${escapeHTML(a.uid)}">
-                                    Reject
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join("");
-        }
-    }
-
-    // 4. Approved Lab Assistants Directory
+    // 3. Approved Lab Assistants Directory (Admin Managed)
     if (approvedAssistantsTable) {
-        const approvedAssistants = allStudents.filter(s => s.role === "lab_assistant" && s.status === "approved");
+        const approvedAssistants = allStudents.filter(s => s.role === "lab_assistant");
         if (approvedAssistants.length === 0) {
             approvedAssistantsTable.innerHTML = `
                 <tr>
                     <td colspan="5" class="table-empty-state">
-                        <p>No approved lab assistants registered yet.</p>
+                        <p>No lab assistants registered yet. Click "+ Register New Lab Assistant" above to provision an assistant.</p>
                     </td>
                 </tr>
             `;
@@ -1931,47 +1893,119 @@ pendingStudentsTable?.addEventListener("click", async (e) => {
     }
 });
 
-// Lab Assistant Approval Actions
-pendingAssistantsTable?.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
+// ==========================================================================
+// SUPER ADMIN LAB ASSISTANT DIRECT REGISTRATION
+// ==========================================================================
 
-    const assistantUid = btn.dataset.uid;
-    const isApprove = btn.classList.contains("approve-assistant-btn");
-    const isReject = btn.classList.contains("reject-assistant-btn");
-    if (!assistantUid || (!isApprove && !isReject)) return;
+let secondaryAuthInstance = null;
+function getSecondaryAuth() {
+    if (!secondaryAuthInstance) {
+        const secApp = initializeApp(firebaseConfig, "AssistantRegApp");
+        secondaryAuthInstance = getAuth(secApp);
+    }
+    return secondaryAuthInstance;
+}
 
-    const action = isApprove ? "approve" : "reject";
-    const confirmed = confirm(`Are you sure you want to ${action} this lab assistant account?`);
-    if (!confirmed) return;
+const openRegisterAssistantBtn = document.getElementById("openRegisterAssistantBtn");
+const closeRegisterAssistantModal = document.getElementById("closeRegisterAssistantModal");
+const registerAssistantModal = document.getElementById("registerAssistantModal");
+const registerAssistantForm = document.getElementById("registerAssistantForm");
+const assistantRegName = document.getElementById("assistantRegName");
+const assistantRegDepartment = document.getElementById("assistantRegDepartment");
+const assistantRegEmail = document.getElementById("assistantRegEmail");
+const assistantRegPassword = document.getElementById("assistantRegPassword");
+const toggleRegAssistantPassword = document.getElementById("toggleRegAssistantPassword");
+const saveAssistantBtn = document.getElementById("saveAssistantBtn");
+const assistantRegMessage = document.getElementById("assistantRegMessage");
 
-    btn.disabled = true;
-    try {
-        const assistantRef = doc(db, "users", assistantUid);
-        if (isApprove) {
-            await updateDoc(assistantRef, {
-                active: true,
-                status: "approved",
-                approvedAt: new Date()
-            });
-            showToast("Lab Assistant account approved successfully!", "success");
-        } else {
-            await updateDoc(assistantRef, {
-                active: false,
-                status: "rejected",
-                rejectedAt: new Date()
-            });
-            showToast("Lab Assistant account rejected.", "info");
-        }
-    } catch (error) {
-        console.error("Lab assistant approval error:", error);
-        showToast("Error updating lab assistant status.", "error");
-        btn.disabled = false;
+openRegisterAssistantBtn?.addEventListener("click", () => {
+    registerAssistantForm?.reset();
+    if (assistantRegMessage) assistantRegMessage.textContent = "";
+    if (registerAssistantModal) registerAssistantModal.style.display = "flex";
+});
+
+closeRegisterAssistantModal?.addEventListener("click", () => {
+    if (registerAssistantModal) registerAssistantModal.style.display = "none";
+});
+
+registerAssistantModal?.addEventListener("click", (e) => {
+    if (e.target === registerAssistantModal) {
+        registerAssistantModal.style.display = "none";
     }
 });
-        console.error("Student approval error:", error);
-        showToast("Error updating student status.", "error");
-        btn.disabled = false;
+
+toggleRegAssistantPassword?.addEventListener("click", () => {
+    if (!assistantRegPassword) return;
+    const isPw = assistantRegPassword.type === "password";
+    assistantRegPassword.type = isPw ? "text" : "password";
+    toggleRegAssistantPassword.textContent = isPw ? "🙈" : "👁️";
+});
+
+registerAssistantForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = assistantRegName.value.trim();
+    const department = assistantRegDepartment.value;
+    const email = assistantRegEmail.value.trim().toLowerCase();
+    const password = assistantRegPassword.value;
+
+    if (!name || !department || !email || !password) {
+        showToast("Please fill in all lab assistant details.", "warning");
+        return;
+    }
+
+    if (!isAuthorizedEmail(email)) {
+        assistantRegMessage.textContent = "Please provide an authorized institutional email address.";
+        assistantRegMessage.style.color = "var(--danger)";
+        return;
+    }
+
+    if (password.length < 6) {
+        assistantRegMessage.textContent = "Password must be at least 6 characters long.";
+        assistantRegMessage.style.color = "var(--danger)";
+        return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+        assistantRegMessage.textContent = "Password must contain at least one letter and one number.";
+        assistantRegMessage.style.color = "var(--danger)";
+        return;
+    }
+
+    saveAssistantBtn.disabled = true;
+    assistantRegMessage.textContent = "Provisioning lab assistant account...";
+    assistantRegMessage.style.color = "var(--primary)";
+
+    try {
+        const secAuth = getSecondaryAuth();
+        const userCred = await createUserWithEmailAndPassword(secAuth, email, password);
+        await secondarySignOut(secAuth);
+
+        await setDoc(doc(db, "users", userCred.user.uid), {
+            uid: userCred.user.uid,
+            name: name,
+            email: email,
+            role: "lab_assistant",
+            department: department,
+            active: true,
+            status: "approved",
+            createdAt: new Date(),
+            approvedAt: new Date(),
+            registeredBy: currentUser?.email || "Super Admin"
+        });
+
+        showToast(`Lab Assistant ${name} successfully registered for ${department}!`, "success");
+        if (registerAssistantModal) registerAssistantModal.style.display = "none";
+        registerAssistantForm.reset();
+
+    } catch (error) {
+        console.error("Assistant registration error:", error);
+        assistantRegMessage.textContent = error.message;
+        assistantRegMessage.style.color = "var(--danger)";
+    } finally {
+        saveAssistantBtn.disabled = false;
     }
 });
 
@@ -2042,7 +2076,7 @@ function exportInventoryCSV() {
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    downloadCSV(csvContent, `LabTrack-Inventory-${getTodayDateDMY()}.csv`);
+    downloadCSV(csvContent, `PGDAV-LabTrack-Inventory-${getTodayDateDMY()}.csv`);
     showToast("Inventory exported to CSV successfully!", "success");
 }
 
@@ -2067,7 +2101,7 @@ function exportLoansCSV() {
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    downloadCSV(csvContent, `LabTrack-ActiveLoans-${getTodayDateDMY()}.csv`);
+    downloadCSV(csvContent, `PGDAV-LabTrack-ActiveLoans-${getTodayDateDMY()}.csv`);
     showToast("Active loans exported to CSV!", "success");
 }
 

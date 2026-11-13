@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>LabTrack | Login</title>
+    <title>PGDAV LabTrack | Login</title>
 
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -18,7 +18,7 @@
 
             <div class="brand">
                 <div class="brand-icon">QR</div>
-                <h1>LabTrack</h1>
+                <h1>PGDAV LabTrack</h1>
             </div>
 
             <!-- Login Section -->
@@ -26,7 +26,7 @@
 
                 <div class="login-heading">
                     <h2>Welcome Back!</h2>
-                    <p>Login to access your LabTrack account.</p>
+                    <p>Login to access your PGDAV LabTrack account.</p>
                 </div>
 
                 <form id="loginForm">
@@ -83,23 +83,15 @@
 
             </div>
 
-            <!-- User Signup Section -->
+            <!-- User Signup Section (Students Only) -->
             <div id="signupSection" style="display: none;">
 
                 <div class="login-heading">
-                    <h2 id="signupHeaderTitle">Create an Account</h2>
-                    <p id="signupHeaderSubtitle">Register for LabTrack access.</p>
+                    <h2 id="signupHeaderTitle">Student Registration</h2>
+                    <p id="signupHeaderSubtitle">Register for PGDAV LabTrack student access.</p>
                 </div>
 
                 <form id="signupForm">
-
-                    <div class="form-group">
-                        <label for="signupRole">Register As</label>
-                        <select id="signupRole" required>
-                            <option value="student">Student</option>
-                            <option value="lab_assistant">Lab Assistant</option>
-                        </select>
-                    </div>
 
                     <div class="form-group">
                         <label for="signupName">Full Name</label>
@@ -109,17 +101,6 @@
                             placeholder="Enter your full name"
                             required
                         >
-                    </div>
-
-                    <div class="form-group" id="signupDepartmentGroup" style="display: none;">
-                        <label for="signupDepartment">Assigned Laboratory</label>
-                        <select id="signupDepartment">
-                            <option value="">Select your laboratory</option>
-                            <option value="Computer Science Lab">Computer Science Lab</option>
-                            <option value="Commerce Lab">Commerce Lab</option>
-                            <option value="Statistics Lab">Statistics Lab</option>
-                            <option value="Environmental Science Lab">Environmental Science Lab</option>
-                        </select>
                     </div>
 
                     <div class="form-group" id="signupRollNoGroup">
@@ -138,6 +119,14 @@
                             <option value="">Select your course</option>
                             <option value="B.Sc. (Hons) Computer Science">B.Sc. (Hons) Computer Science</option>
                             <option value="B.Sc. (Hons) Mathematics">B.Sc. (Hons) Mathematics</option>
+                            <option value="B.Sc. (Hons) Statistics">B.Sc. (Hons) Statistics</option>
+                            <option value="B.Sc. Physical Sciences (Computer)">B.Sc. Physical Sciences (Computer)</option>
+                            <option value="B.Sc. Physical Sciences (Chemistry)">B.Sc. Physical Sciences (Chemistry)</option>
+                            <option value="B.A. Programme">B.A. Programme</option>
+                            <option value="B.Com (Hons)">B.Com (Hons)</option>
+                            <option value="Other">Other Department</option>
+                        </select>
+                    </div>
                             <option value="B.Sc. (Hons) Statistics">B.Sc. (Hons) Statistics</option>
                             <option value="B.Sc. Physical Sciences (Computer)">B.Sc. Physical Sciences (Computer)</option>
                             <option value="B.Sc. Physical Sciences (Chemistry)">B.Sc. Physical Sciences (Chemistry)</option>
@@ -190,7 +179,7 @@
                     </div>
 
                     <button type="submit" id="signupBtn">
-                        Create Student Account
+                        Register Student Account
                     </button>
 
                     <p id="signupMessage"></p>
@@ -205,7 +194,7 @@
             </div>
 
             <div class="login-footer">
-                <p>QR-Based Lab Equipment Inventory System</p>
+                <p>PGDAV LabTrack • Laboratory Equipment Management System</p>
             </div>
 
         </section>

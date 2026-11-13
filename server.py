@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LabTrack Server (Python Edition)
+PGDAV LabTrack Server (Python Edition)
 Serves static web files and provides the backend QR generation service for the Admin Dashboard.
 """
 
@@ -72,7 +72,7 @@ class LabTrackHandler(SimpleHTTPRequestHandler):
 def run_server():
     server_address = ("127.0.0.1", PORT)
     httpd = HTTPServer(server_address, LabTrackHandler)
-    print(f"LabTrack Python Server is live at http://localhost:{PORT}/")
+    print(f"PGDAV LabTrack Python Server is live at http://localhost:{PORT}/")
     print(f"- Login / Home:         http://localhost:{PORT}/index.html")
     print(f"- Admin Dashboard:      http://localhost:{PORT}/dashboard.html")
     print(f"- Lab Assistant:        http://localhost:{PORT}/lab-assistant.html")

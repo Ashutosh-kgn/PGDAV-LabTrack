@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LabTrack - Python Backend QR Code Generation Service
+PGDAV LabTrack - Python Backend QR Code Generation Service
 Exclusively generates high-resolution QR codes and asset labels for Admin Dashboard.
 """
 
