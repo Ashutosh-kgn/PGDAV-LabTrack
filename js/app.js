@@ -66,6 +66,52 @@ showLogin?.addEventListener("click", (event) => {
     loginSection.style.display = "block";
 });
 
+// Password Visibility Toggles
+function setupPasswordToggle(buttonId, inputId) {
+    const btn = document.getElementById(buttonId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", () => {
+        const isPassword = input.type === "password";
+        input.type = isPassword ? "text" : "password";
+        btn.textContent = isPassword ? "🙈" : "👁️";
+    });
+}
+
+setupPasswordToggle("toggleLoginPassword", "password");
+setupPasswordToggle("toggleSignupPassword", "signupPassword");
+setupPasswordToggle("toggleConfirmPassword", "confirmPassword");
+
+// Real-time Password Matching & Constraints Validation
+const signupPasswordInput = document.getElementById("signupPassword");
+const confirmPasswordInput = document.getElementById("confirmPassword");
+const passwordMatchIndicator = document.getElementById("passwordMatchIndicator");
+
+function validatePasswordMatching() {
+    if (!signupPasswordInput || !confirmPasswordInput || !passwordMatchIndicator) return;
+
+    const pw = signupPasswordInput.value;
+    const cpw = confirmPasswordInput.value;
+
+    if (!cpw) {
+        passwordMatchIndicator.textContent = "";
+        passwordMatchIndicator.className = "password-match-indicator";
+        return;
+    }
+
+    if (pw === cpw) {
+        passwordMatchIndicator.textContent = "✓ Passwords match";
+        passwordMatchIndicator.className = "password-match-indicator match";
+    } else {
+        passwordMatchIndicator.textContent = "✕ Passwords do not match";
+        passwordMatchIndicator.className = "password-match-indicator mismatch";
+    }
+}
+
+signupPasswordInput?.addEventListener("input", validatePasswordMatching);
+confirmPasswordInput?.addEventListener("input", validatePasswordMatching);
+
 // Student Signup
 const signupForm = document.getElementById("signupForm");
 
@@ -74,6 +120,8 @@ if (signupForm) {
         event.preventDefault();
 
         const name = document.getElementById("signupName").value.trim();
+        const rollNo = document.getElementById("signupRollNo")?.value.trim() || "";
+        const course = document.getElementById("signupCourse")?.value.trim() || "";
         const email = document.getElementById("signupEmail").value.trim().toLowerCase();
         const password = document.getElementById("signupPassword").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
@@ -81,8 +129,29 @@ if (signupForm) {
         const signupMessage = document.getElementById("signupMessage");
         const signupBtn = document.getElementById("signupBtn");
 
+        if (!rollNo || !course) {
+            signupMessage.textContent = "Please fill in your College Roll Number and Course.";
+            signupMessage.style.color = "var(--danger)";
+            return;
+        }
+
         if (!isAuthorizedEmail(email)) {
             signupMessage.textContent = "Please provide an authorized institutional email address.";
+            signupMessage.style.color = "var(--danger)";
+            return;
+        }
+
+        // Password Constraints: min 6 chars, letter + number
+        if (password.length < 6) {
+            signupMessage.textContent = "Password must be at least 6 characters long.";
+            signupMessage.style.color = "var(--danger)";
+            return;
+        }
+
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        if (!hasLetter || !hasNumber) {
+            signupMessage.textContent = "Password must contain at least one letter and one number.";
             signupMessage.style.color = "var(--danger)";
             return;
         }
@@ -109,6 +178,8 @@ if (signupForm) {
             await setDoc(doc(db, "users", user.uid), {
                 name: name,
                 email: email,
+                rollNo: rollNo,
+                course: course,
                 role: "student",
                 active: false,
                 status: "pending",
@@ -122,6 +193,7 @@ if (signupForm) {
             signupMessage.style.color = "var(--success)";
 
             signupForm.reset();
+            if (passwordMatchIndicator) passwordMatchIndicator.textContent = "";
 
         } catch (error) {
             console.error("Signup error:", error);

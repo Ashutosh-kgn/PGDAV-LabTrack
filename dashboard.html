@@ -246,6 +246,15 @@
                             <option value="Approved">Approved</option>
                             <option value="Rejected">Rejected</option>
                         </select>
+                        <select id="filterRequestsAttendant" class="filter-select">
+                            <option value="All">All Lab Attendants</option>
+                            <option value="Computer Science">Computer Science Lab</option>
+                            <option value="Commerce">Commerce Lab</option>
+                            <option value="Stastics">Stastics Lab</option>
+                            <option value="Physical Education">Physical Education Lab</option>
+                            <option value="Library">Library</option>
+                            <option value="General">General Lab</option>
+                        </select>
                     </div>
                 </div>
 
@@ -256,8 +265,9 @@
                                 <th>Student</th>
                                 <th>Equipment</th>
                                 <th>Asset Availability</th>
+                                <th>Transferred To</th>
                                 <th>Requested Period</th>
-                                <th>Purpose / Course</th>
+                                <th>Purpose</th>
                                 <th>Submitted On</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -266,7 +276,7 @@
 
                         <tbody id="borrowingRequestsTable">
                             <tr>
-                                <td colspan="8" class="table-empty-state">
+                                <td colspan="9" class="table-empty-state">
                                     <p>Loading student borrowing requests...</p>
                                 </td>
                             </tr>
@@ -382,6 +392,8 @@
                         <thead>
                             <tr>
                                 <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Course</th>
                                 <th>Email</th>
                                 <th>Registration Date</th>
                                 <th>Actions</th>
@@ -390,7 +402,7 @@
 
                         <tbody id="pendingStudentsTable">
                             <tr>
-                                <td colspan="4" class="table-empty-state">
+                                <td colspan="6" class="table-empty-state">
                                     <p>Loading pending student requests...</p>
                                 </td>
                             </tr>
@@ -412,6 +424,8 @@
                         <thead>
                             <tr>
                                 <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Course</th>
                                 <th>Email</th>
                                 <th>Account Status</th>
                                 <th>Active Loans</th>
@@ -420,7 +434,7 @@
 
                         <tbody id="approvedStudentsTable">
                             <tr>
-                                <td colspan="4" class="table-empty-state">
+                                <td colspan="6" class="table-empty-state">
                                     <p>Loading approved students...</p>
                                 </td>
                             </tr>
@@ -661,6 +675,9 @@
             </div>
 
             <div class="qr-card-preview">
+                <div style="margin-bottom: 8px;">
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 11px;">🐍 Generated via Python Backend Service</span>
+                </div>
                 <h3 id="qrEquipmentName">Equipment Name</h3>
                 <p id="qrEquipmentId">ID: LAB001</p>
                 <div id="qrCodeContainer"></div>

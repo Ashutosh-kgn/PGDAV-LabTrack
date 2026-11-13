@@ -1545,7 +1545,7 @@ tbody tr:last-child td {
     font-size: 14px;
 }
 
-#loginBtn, #signupBtn {
+#loginBtn, #signupBtn, #resetBtn {
     width: 100%;
     padding: 13px;
     border: none;
@@ -1559,16 +1559,70 @@ tbody tr:last-child td {
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
-#loginBtn:hover, #signupBtn:hover {
+#loginBtn:hover, #signupBtn:hover, #resetBtn:hover {
     background: var(--primary-hover);
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
-#loginBtn:disabled, #signupBtn:disabled {
+#loginBtn:disabled, #signupBtn:disabled, #resetBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* Password wrapper and toggle button */
+.input-password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-password-wrapper input {
+    width: 100%;
+    padding-right: 42px !important;
+}
+
+.toggle-password-btn {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--slate-500);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.toggle-password-btn:hover {
+    color: var(--slate-800);
+    background: var(--slate-100);
+}
+
+.password-constraint-hint {
+    font-size: 11.5px;
+    color: var(--slate-500);
+    margin-top: 5px;
+}
+
+.password-match-indicator {
+    font-size: 12px;
+    margin-top: 5px;
+    font-weight: 600;
+    min-height: 16px;
+}
+
+.password-match-indicator.match {
+    color: var(--success);
+}
+
+.password-match-indicator.mismatch {
+    color: var(--danger);
 }
 
 #message, #signupMessage {

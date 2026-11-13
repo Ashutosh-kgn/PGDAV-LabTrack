@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('child_process');
 
 const PORT = process.env.PORT || 3000;
 const BASE_DIR = __dirname;
@@ -17,12 +18,52 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    let cleanUrl = req.url.split('?')[0];
-    if (cleanUrl === '/' || cleanUrl === '') {
-        cleanUrl = '/index.html';
+    const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
+    const cleanUrl = parsedUrl.pathname;
+
+    // Python Backend Service Endpoint for Admin QR Generation
+    if (cleanUrl === '/api/generate-qr') {
+        const id = parsedUrl.searchParams.get('id') || '';
+        const name = parsedUrl.searchParams.get('name') || '';
+        const category = parsedUrl.searchParams.get('category') || '';
+        const location = parsedUrl.searchParams.get('location') || '';
+
+        if (!id) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Equipment ID is required' }));
+            return;
+        }
+
+        const scriptPath = path.join(BASE_DIR, 'generate_qr.py');
+        execFile('python', [scriptPath, id, name, category, location], (err, stdout, stderr) => {
+            if (err) {
+                console.error('Python QR generation error:', stderr || err.message);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Python QR generation service failed' }));
+                return;
+            }
+
+            try {
+                const parsed = JSON.parse(stdout);
+                res.writeHead(200, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Cache-Control': 'no-cache'
+                });
+                res.end(JSON.stringify(parsed));
+            } catch (jsonErr) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Invalid response from Python QR service' }));
+            }
+        });
+        return;
     }
 
-    const filePath = path.join(BASE_DIR, cleanUrl);
+    let filePathUrl = cleanUrl;
+    if (filePathUrl === '/' || filePathUrl === '') {
+        filePathUrl = '/index.html';
+    }
+
+    const filePath = path.join(BASE_DIR, filePathUrl);
 
     // Prevent directory traversal
     if (!filePath.startsWith(BASE_DIR)) {

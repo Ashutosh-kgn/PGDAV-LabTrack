@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +13,6 @@
     <!-- Main Navigation Bar -->
     <header class="dashboard-header">
         <div class="brand-wrapper">
-            <div class="brand-badge">QR</div>
             <div class="brand-title-group">
                 <h2>LabTrack</h2>
                 <p class="brand-tagline">Student Laboratory Portal</p>
@@ -41,7 +41,6 @@
         <div class="student-portal-banner">
             <div>
                 <h2>Welcome to your Lab Portal</h2>
-                <p>Browse laboratory assets, submit equipment requests, and keep track of your active borrowings and due dates.</p>
             </div>
             <button id="openScannerBtn" type="button" class="btn btn-success">
                 📷 Scan Equipment QR
@@ -56,7 +55,7 @@
                     <div class="stat-card-icon">🔬</div>
                 </div>
                 <h2 id="availableEquipment">0</h2>
-                <div class="stat-card-footer">Equipment ready to borrow</div>
+
             </div>
 
             <div class="stat-card variant-borrowed">
@@ -65,7 +64,6 @@
                     <div class="stat-card-icon">📦</div>
                 </div>
                 <h2 id="myActiveLoansCount">0</h2>
-                <div class="stat-card-footer">Items currently in your custody</div>
             </div>
 
             <div class="stat-card variant-pending">
@@ -74,7 +72,6 @@
                     <div class="stat-card-icon">⏳</div>
                 </div>
                 <h2 id="myPendingRequestsCount">0</h2>
-                <div class="stat-card-footer">Awaiting laboratory admin review</div>
             </div>
 
             <div class="stat-card variant-overdue" id="studentOverdueCard">
@@ -83,23 +80,22 @@
                     <div class="stat-card-icon">⚠️</div>
                 </div>
                 <h2 id="myOverdueCount">0</h2>
-                <div class="stat-card-footer">Please return immediately to lab</div>
             </div>
         </div>
 
         <!-- Navigation Tabs -->
         <nav class="tabs-nav" id="studentTabsNav">
             <button class="tab-btn active" data-tab="tab-my-loans" type="button">
-                📦 My Borrowed Items <span class="tab-badge" id="tabLoansBadge">0</span>
+                My Borrowed Items <span class="tab-badge" id="tabLoansBadge">0</span>
             </button>
             <button class="tab-btn" data-tab="tab-browse" type="button">
-                🔬 Browse & Request <span class="tab-badge" id="tabBrowseBadge">0</span>
+                Browse & Request <span class="tab-badge" id="tabBrowseBadge">0</span>
             </button>
             <button class="tab-btn" data-tab="tab-my-requests" type="button">
-                📑 My Requests <span class="tab-badge" id="tabRequestsBadge">0</span>
+                My Requests <span class="tab-badge" id="tabRequestsBadge">0</span>
             </button>
             <button class="tab-btn" data-tab="tab-history" type="button">
-                📜 Borrowing History
+                Borrowing History
             </button>
         </nav>
 
@@ -111,7 +107,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Currently Borrowed Equipment</h2>
-                        <p>Equipment currently issued to you. Please return on or before the specified due date.</p>
                     </div>
                 </div>
 
@@ -148,19 +143,14 @@
                 <div class="section-header">
                     <div>
                         <h2>Laboratory Equipment Catalog</h2>
-                        <p>Explore equipment inventory and submit a borrowing request for your academic coursework.</p>
                     </div>
                 </div>
 
                 <!-- Search and Category Filters -->
                 <div class="filter-bar">
                     <div class="search-input-wrapper">
-                        <span class="search-icon">🔍</span>
-                        <input
-                            type="text"
-                            id="searchEquipment"
-                            placeholder="Search equipment by name, ID, or lab location..."
-                        >
+                        <input type="text" id="searchEquipment"
+                            placeholder="Search equipment by name, ID, or lab location...">
                     </div>
 
                     <select id="filterCategory" class="filter-select">
@@ -213,7 +203,6 @@
                 <div class="section-header">
                     <div>
                         <h2>My Borrowing Requests</h2>
-                        <p>Track the approval status of equipment you have requested.</p>
                     </div>
                 </div>
 
@@ -223,6 +212,7 @@
                             <tr>
                                 <th>Equipment ID</th>
                                 <th>Equipment Name</th>
+                                <th>Transferred To</th>
                                 <th>Requested Period</th>
                                 <th>Purpose / Lab Course</th>
                                 <th>Submitted On</th>
@@ -233,7 +223,7 @@
 
                         <tbody id="myRequestsTable">
                             <tr>
-                                <td colspan="7" class="table-empty-state">
+                                <td colspan="8" class="table-empty-state">
                                     <p>Loading your requests...</p>
                                 </td>
                             </tr>
@@ -251,7 +241,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Past Borrowing Records</h2>
-                        <p>History of equipment you have previously borrowed and returned.</p>
                     </div>
                 </div>
 
@@ -313,6 +302,22 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Transfer Request To Lab Attendant</label>
+                    <input type="text" id="requestLabAttendant" readonly style="background: var(--primary-light); color: var(--primary); font-weight: 700;">
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label>Student Roll Number</label>
+                        <input type="text" id="requestStudentRollNo" readonly>
+                    </div>
+                    <div>
+                        <label>Student Course</label>
+                        <input type="text" id="requestStudentCourse" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="requestFromDate">Required From Date</label>
                     <input type="date" id="requestFromDate" required>
                 </div>
@@ -324,12 +329,8 @@
 
                 <div class="form-group">
                     <label for="requestPurpose">Purpose / Course Experiment</label>
-                    <textarea
-                        id="requestPurpose"
-                        rows="3"
-                        placeholder="e.g., Physics Lab 202 - Optics experiment assignment"
-                        required
-                    ></textarea>
+                    <textarea id="requestPurpose" rows="3"
+                        placeholder="e.g., Physics Lab 202 - Optics experiment assignment" required></textarea>
                 </div>
 
                 <button type="submit" id="confirmRequestBtn" class="btn btn-primary">
@@ -349,7 +350,8 @@
                 <button type="button" id="closeScannerBtn">×</button>
             </div>
 
-            <p style="font-size: 13.5px; color: var(--slate-600);">Scan an equipment QR code in the lab to inspect details or request it.</p>
+            <p style="font-size: 13.5px; color: var(--slate-600);">Scan an equipment QR code in the lab to inspect
+                details or request it.</p>
 
             <div class="scanner-viewfinder">
                 <div id="qr-reader"></div>
@@ -373,4 +375,5 @@
     <script type="module" src="js/student.js"></script>
 
 </body>
+
 </html>

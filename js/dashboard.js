@@ -671,27 +671,48 @@ const qrEquipmentId = document.getElementById("qrEquipmentId");
 const downloadQrBtn = document.getElementById("downloadQrBtn");
 const printQrBtn = document.getElementById("printQrBtn");
 
-function openQrModal(item) {
+async function openQrModal(item) {
     if (!qrModal || !qrCodeContainer) return;
     currentQrEquipment = item;
 
     if (qrEquipmentName) qrEquipmentName.textContent = item.name;
     if (qrEquipmentId) qrEquipmentId.textContent = `Asset ID: ${item.equipmentId} | ${item.location}`;
 
-    qrCodeContainer.innerHTML = "";
-
-    if (window.QRCode) {
-        new window.QRCode(qrCodeContainer, {
-            text: item.equipmentId,
-            width: 200,
-            height: 200,
-            correctLevel: window.QRCode.CorrectLevel.H
-        });
-    } else {
-        qrCodeContainer.innerHTML = `<p style="color: var(--danger)">QR library not loaded.</p>`;
-    }
+    qrCodeContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 190px; color: var(--slate-500);">
+            <div style="width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px;"></div>
+            <span style="font-size: 12px;">Generating QR via Python Service...</span>
+        </div>
+    `;
 
     qrModal.style.display = "flex";
+
+    try {
+        const response = await fetch(`/api/generate-qr?id=${encodeURIComponent(item.equipmentId)}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const qrSrc = data.qrDataUrl || data.dataUrl;
+        if (qrSrc) {
+            qrCodeContainer.innerHTML = `
+                <img id="activeQrImage" src="${qrSrc}" alt="QR code for ${escapeHTML(item.equipmentId)}" style="width: 190px; height: 190px; display: block; margin: 0 auto; border-radius: 6px;" />
+            `;
+            return;
+        }
+        throw new Error(data.error || "No dataUrl returned");
+    } catch (err) {
+        console.warn("Python backend QR generation failed, using fallback:", err);
+        qrCodeContainer.innerHTML = "";
+        if (window.QRCode) {
+            new window.QRCode(qrCodeContainer, {
+                text: item.equipmentId,
+                width: 190,
+                height: 190,
+                correctLevel: window.QRCode.CorrectLevel.H
+            });
+        } else {
+            qrCodeContainer.innerHTML = `<p style="color: var(--danger)">QR generation failed.</p>`;
+        }
+    }
 }
 
 closeQrModal?.addEventListener("click", () => {
@@ -705,7 +726,7 @@ downloadQrBtn?.addEventListener("click", () => {
     if (!currentQrEquipment) return;
     const canvas = qrCodeContainer?.querySelector("canvas");
     const img = qrCodeContainer?.querySelector("img");
-    let url = canvas ? canvas.toDataURL("image/png") : (img ? img.src : null);
+    let url = img ? img.src : (canvas ? canvas.toDataURL("image/png") : null);
 
     if (!url) {
         showToast("QR code preview is generating, please wait...", "warning");
@@ -716,11 +737,114 @@ downloadQrBtn?.addEventListener("click", () => {
     a.href = url;
     a.download = `LabTrack-QR-${currentQrEquipment.equipmentId}.png`;
     a.click();
-    showToast("QR code downloaded!", "success");
+    showToast("QR code downloaded successfully!", "success");
 });
 
 printQrBtn?.addEventListener("click", () => {
-    window.print();
+    if (!currentQrEquipment) return;
+    const img = qrCodeContainer?.querySelector("img");
+    const canvas = qrCodeContainer?.querySelector("canvas");
+    const src = img ? img.src : (canvas ? canvas.toDataURL("image/png") : null);
+
+    if (!src) {
+        showToast("QR code is not ready to print.", "warning");
+        return;
+    }
+
+    const printWin = window.open("", "_blank", "width=500,height=600");
+    if (!printWin) {
+        window.print();
+        return;
+    }
+
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Equipment QR Tag - ${escapeHTML(currentQrEquipment.equipmentId)}</title>
+            <style>
+                @page { margin: 10mm; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 90vh;
+                    margin: 0;
+                    background: #fff;
+                    color: #0f172a;
+                }
+                .label-card {
+                    border: 2px dashed #0284c7;
+                    border-radius: 12px;
+                    padding: 24px;
+                    text-align: center;
+                    width: 320px;
+                    background: #f8fafc;
+                }
+                .label-title {
+                    font-size: 18px;
+                    font-weight: 800;
+                    margin-bottom: 4px;
+                    color: #0f172a;
+                }
+                .label-badge {
+                    display: inline-block;
+                    background: #e0f2fe;
+                    color: #0369a1;
+                    font-weight: 700;
+                    font-size: 13px;
+                    padding: 3px 10px;
+                    border-radius: 999px;
+                    margin-bottom: 12px;
+                }
+                .qr-img {
+                    width: 190px;
+                    height: 190px;
+                    margin: 0 auto 12px;
+                    display: block;
+                    background: #fff;
+                    padding: 8px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                }
+                .label-meta {
+                    font-size: 12px;
+                    color: #475569;
+                    line-height: 1.6;
+                }
+                .label-footer {
+                    margin-top: 14px;
+                    font-size: 10px;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="label-card">
+                <div class="label-title">${escapeHTML(currentQrEquipment.name)}</div>
+                <div class="label-badge">ID: ${escapeHTML(currentQrEquipment.equipmentId)}</div>
+                <img class="qr-img" src="${src}" alt="QR Code" />
+                <div class="label-meta">
+                    <div><strong>Category:</strong> ${escapeHTML(currentQrEquipment.category || "General")}</div>
+                    <div><strong>Location:</strong> ${escapeHTML(currentQrEquipment.location || "N/A")}</div>
+                    <div><strong>Condition:</strong> ${escapeHTML(currentQrEquipment.condition || "Good")}</div>
+                </div>
+                <div class="label-footer">LabTrack Asset Tag • Python QR Backend Service</div>
+            </div>
+            <script>
+                window.onload = function() {
+                    window.focus();
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
 });
 
 // ==========================================================================
@@ -1093,6 +1217,7 @@ if (returnForm) {
 
 const borrowingRequestsTable = document.getElementById("borrowingRequestsTable");
 const filterRequestsStatus = document.getElementById("filterRequestsStatus");
+const filterRequestsAttendant = document.getElementById("filterRequestsAttendant");
 
 const rejectRequestModal = document.getElementById("rejectRequestModal");
 const closeRejectRequestModal = document.getElementById("closeRejectRequestModal");
@@ -1117,11 +1242,14 @@ function startBorrowingRequestsListener() {
 }
 
 filterRequestsStatus?.addEventListener("change", renderBorrowingRequestsTable);
+filterRequestsAttendant?.addEventListener("change", renderBorrowingRequestsTable);
 
 function renderBorrowingRequestsTable() {
     if (!borrowingRequestsTable) return;
 
     const filter = filterRequestsStatus?.value || "Pending";
+    const attendantFilter = filterRequestsAttendant?.value || "All";
+
     let list = allRequests;
 
     if (filter === "Pending") {
@@ -1130,11 +1258,20 @@ function renderBorrowingRequestsTable() {
         list = allRequests.filter(r => r.status === filter);
     }
 
+    if (attendantFilter !== "All") {
+        list = list.filter(r => {
+            const att = (r.labAttendant || "").toLowerCase();
+            const cat = (r.category || "").toLowerCase();
+            const target = attendantFilter.toLowerCase();
+            return att.includes(target) || cat.includes(target);
+        });
+    }
+
     if (list.length === 0) {
         borrowingRequestsTable.innerHTML = `
             <tr>
-                <td colspan="8" class="table-empty-state">
-                    <p>No ${filter.toLowerCase()} equipment requests.</p>
+                <td colspan="9" class="table-empty-state">
+                    <p>No ${filter.toLowerCase()} equipment requests matching the selected filter.</p>
                 </td>
             </tr>
         `;
@@ -1176,6 +1313,9 @@ function renderBorrowingRequestsTable() {
         const formattedTo = formatDate(req.toDate);
         const formattedCreated = formatDate(req.createdAt);
 
+        // Respective Lab Attendant
+        const attendantName = req.labAttendant || (liveEquipment?.category ? `${liveEquipment.category} Lab Attendant` : (req.category ? `${req.category} Lab Attendant` : "General Lab Attendant"));
+
         // Actions column: if item is not available, provide contextual warning
         let actionCellContent = '';
         if (isPending) {
@@ -1212,6 +1352,8 @@ function renderBorrowingRequestsTable() {
             <tr>
                 <td>
                     <strong>${escapeHTML(req.studentName || "Student")}</strong>
+                    ${req.studentRollNo ? `<div style="font-size: 11.5px; color: var(--primary); font-weight: 600;">Roll: ${escapeHTML(req.studentRollNo)}</div>` : ''}
+                    ${req.studentCourse ? `<div style="font-size: 11px; color: var(--slate-600);">${escapeHTML(req.studentCourse)}</div>` : ''}
                     <div style="font-size: 11px; color: var(--slate-500);">${escapeHTML(req.studentEmail || "")}</div>
                 </td>
                 <td>
@@ -1221,6 +1363,11 @@ function renderBorrowingRequestsTable() {
                 <td>
                     <span class="badge ${liveStatusBadgeClass}">
                         ${escapeHTML(liveStatus)}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600;">
+                        👤 ${escapeHTML(attendantName)}
                     </span>
                 </td>
                 <td>
@@ -1591,7 +1738,7 @@ function renderStudentManagement() {
         if (pendingList.length === 0) {
             pendingStudentsTable.innerHTML = `
                 <tr>
-                    <td colspan="4" class="table-empty-state">
+                    <td colspan="6" class="table-empty-state">
                         <p>No pending student registration requests.</p>
                     </td>
                 </tr>
@@ -1603,6 +1750,8 @@ function renderStudentManagement() {
                 return `
                     <tr>
                         <td><strong>${escapeHTML(s.name || "Student")}</strong></td>
+                        <td><span class="mono-id" style="font-size: 12px; font-weight: 700; color: var(--primary);">${escapeHTML(s.rollNo || "N/A")}</span></td>
+                        <td><span class="badge" style="background:#f1f5f9; color:#334155;">${escapeHTML(s.course || "N/A")}</span></td>
                         <td>${escapeHTML(s.email || "N/A")}</td>
                         <td>${regDate}</td>
                         <td>
@@ -1627,7 +1776,7 @@ function renderStudentManagement() {
         if (approvedList.length === 0) {
             approvedStudentsTable.innerHTML = `
                 <tr>
-                    <td colspan="4" class="table-empty-state">
+                    <td colspan="6" class="table-empty-state">
                         <p>No approved students registered yet.</p>
                     </td>
                 </tr>
@@ -1638,6 +1787,8 @@ function renderStudentManagement() {
                 return `
                     <tr>
                         <td><strong>${escapeHTML(s.name || "Student")}</strong></td>
+                        <td><span class="mono-id" style="font-size: 12px; font-weight: 700; color: var(--primary);">${escapeHTML(s.rollNo || "N/A")}</span></td>
+                        <td><span class="badge" style="background:#f1f5f9; color:#334155;">${escapeHTML(s.course || "N/A")}</span></td>
                         <td>${escapeHTML(s.email)}</td>
                         <td><span class="badge badge-approved">Approved</span></td>
                         <td>

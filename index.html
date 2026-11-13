@@ -52,12 +52,15 @@
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            placeholder="Enter your password"
-                            required
-                        >
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="password"
+                                placeholder="Enter your password"
+                                required
+                            >
+                            <button type="button" class="toggle-password-btn" id="toggleLoginPassword" title="Show/Hide password">👁️</button>
+                        </div>
                     </div>
 
                     <button type="submit" id="loginBtn">
@@ -100,6 +103,31 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="signupRollNo">College Roll Number</label>
+                        <input
+                            type="text"
+                            id="signupRollNo"
+                            placeholder="Example: 21/0458"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupCourse">Course / Department</label>
+                        <select id="signupCourse" required>
+                            <option value="">Select your course</option>
+                            <option value="B.Sc. (Hons) Computer Science">B.Sc. (Hons) Computer Science</option>
+                            <option value="B.Sc. (Hons) Mathematics">B.Sc. (Hons) Mathematics</option>
+                            <option value="B.Sc. (Hons) Statistics">B.Sc. (Hons) Statistics</option>
+                            <option value="B.Sc. Physical Sciences (Computer)">B.Sc. Physical Sciences (Computer)</option>
+                            <option value="B.Sc. Physical Sciences (Chemistry)">B.Sc. Physical Sciences (Chemistry)</option>
+                            <option value="B.A. Programme">B.A. Programme</option>
+                            <option value="B.Com (Hons)">B.Com (Hons)</option>
+                            <option value="Other">Other Department</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="signupEmail">Email Address</label>
                         <input
                             type="email"
@@ -111,24 +139,34 @@
 
                     <div class="form-group">
                         <label for="signupPassword">Password</label>
-                        <input
-                            type="password"
-                            id="signupPassword"
-                            placeholder="Create a password"
-                            minlength="6"
-                            required
-                        >
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="signupPassword"
+                                placeholder="Create a password (min 6 characters)"
+                                minlength="6"
+                                required
+                            >
+                            <button type="button" class="toggle-password-btn" id="toggleSignupPassword" title="Show/Hide password">👁️</button>
+                        </div>
+                        <div class="password-constraint-hint">
+                            Must be at least 6 characters with a letter and a number.
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="confirmPassword">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            placeholder="Confirm your password"
-                            minlength="6"
-                            required
-                        >
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="confirmPassword"
+                                placeholder="Confirm your password"
+                                minlength="6"
+                                required
+                            >
+                            <button type="button" class="toggle-password-btn" id="toggleConfirmPassword" title="Show/Hide password">👁️</button>
+                        </div>
+                        <div class="password-match-indicator" id="passwordMatchIndicator"></div>
                     </div>
 
                     <button type="submit" id="signupBtn">

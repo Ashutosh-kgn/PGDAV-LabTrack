@@ -238,7 +238,9 @@ onAuthStateChanged(auth, async (user) => {
         currentStudent = {
             uid: user.uid,
             name: userData.name || "Student",
-            email: userData.email || user.email || ""
+            email: userData.email || user.email || "",
+            rollNo: userData.rollNo || "",
+            course: userData.course || ""
         };
 
         if (studentName) studentName.textContent = currentStudent.name;
@@ -440,6 +442,9 @@ const requestEquipmentDocId = document.getElementById("requestEquipmentDocId");
 const requestEquipmentId = document.getElementById("requestEquipmentId");
 const requestEquipmentName = document.getElementById("requestEquipmentName");
 const requestEquipmentMeta = document.getElementById("requestEquipmentMeta");
+const requestLabAttendant = document.getElementById("requestLabAttendant");
+const requestStudentRollNo = document.getElementById("requestStudentRollNo");
+const requestStudentCourse = document.getElementById("requestStudentCourse");
 const requestFromDate = document.getElementById("requestFromDate");
 const requestToDate = document.getElementById("requestToDate");
 const requestPurpose = document.getElementById("requestPurpose");
@@ -553,7 +558,12 @@ function openRequestModal(equipment) {
     requestEquipmentDocId.value = equipment.documentId;
     requestEquipmentId.value = equipment.equipmentId;
     requestEquipmentName.value = equipment.name;
-    requestEquipmentMeta.value = `${equipment.category || "Lab"} • Location: ${equipment.location || "Lab"}`;
+    requestEquipmentMeta.value = `${equipment.category || "General"} • Location: ${equipment.location || "Lab"}`;
+
+    const labAttendant = equipment.category ? `${equipment.category} Lab Attendant` : "General Lab Attendant";
+    if (requestLabAttendant) requestLabAttendant.value = labAttendant;
+    if (requestStudentRollNo) requestStudentRollNo.value = currentStudent?.rollNo || "N/A";
+    if (requestStudentCourse) requestStudentCourse.value = currentStudent?.course || "N/A";
 
     requestFromDate.value = getTodayDateISO();
 
@@ -617,15 +627,20 @@ if (requestForm) {
             const formattedFrom = formatDate(rawFromDate);
             const formattedTo = formatDate(rawToDate);
 
+            const assignedAttendant = requestLabAttendant?.value || (eqItem?.category ? `${eqItem.category} Lab Attendant` : "General Lab Attendant");
+
             await addDoc(collection(db, "requests"), {
                 equipmentDocId: docId,
                 equipmentId: eqId,
                 equipmentName: eqName,
                 category: eqItem?.category || "General",
                 location: eqItem?.location || "Lab",
+                labAttendant: assignedAttendant,
                 studentUid: currentStudent.uid,
                 studentName: currentStudent.name,
                 studentEmail: currentStudent.email,
+                studentRollNo: currentStudent.rollNo || "",
+                studentCourse: currentStudent.course || "",
                 fromDate: formattedFrom,
                 toDate: formattedTo,
                 purpose: purpose,
@@ -682,7 +697,7 @@ function renderMyRequestsTable() {
     if (myRequests.length === 0) {
         myRequestsTable.innerHTML = `
             <tr>
-                <td colspan="7" class="table-empty-state">
+                <td colspan="8" class="table-empty-state">
                     <p>You have not submitted any equipment requests yet.</p>
                 </td>
             </tr>
@@ -697,7 +712,7 @@ function renderMyRequestsTable() {
 
         let statusBadge = '<span class="badge">Unknown</span>';
         if (isPending) {
-            statusBadge = '<span class="badge badge-pending">Pending Admin Review</span>';
+            statusBadge = '<span class="badge badge-pending">Pending Review</span>';
         } else if (isApproved) {
             statusBadge = '<span class="badge badge-approved">Approved • Pick up at Lab</span>';
         } else if (isRejected) {
@@ -707,11 +722,17 @@ function renderMyRequestsTable() {
         const formattedFrom = formatDate(req.fromDate);
         const formattedTo = formatDate(req.toDate);
         const subDate = formatDate(req.createdAt);
+        const attendantName = req.labAttendant || (req.category ? `${req.category} Lab Attendant` : "General Lab Attendant");
 
         return `
             <tr>
                 <td><span class="mono-id">${escapeHTML(req.equipmentId)}</span></td>
                 <td><strong>${escapeHTML(req.equipmentName)}</strong></td>
+                <td>
+                    <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600;">
+                        👤 ${escapeHTML(attendantName)}
+                    </span>
+                </td>
                 <td>${formattedFrom} <span style="color: var(--slate-400)">to</span> ${formattedTo}</td>
                 <td>
                     ${escapeHTML(req.purpose)}
@@ -778,10 +799,20 @@ window.addEventListener("labtrack:scanned", (e) => {
         return;
     }
 
+    const attendantName = equipment.category ? `${equipment.category} Lab Attendant` : "General Lab Attendant";
+
     if (equipment.status === "Available") {
         const reqBtn = document.createElement("button");
-        reqBtn.className = "btn btn-primary btn-sm";
-        reqBtn.textContent = "+ Request to Borrow";
+        reqBtn.className = "btn btn-primary";
+        reqBtn.style.marginTop = "10px";
+        reqBtn.style.width = "100%";
+        reqBtn.style.display = "flex";
+        reqBtn.style.alignItems = "center";
+        reqBtn.style.justifyContent = "center";
+        reqBtn.style.gap = "8px";
+        reqBtn.style.fontSize = "14px";
+        reqBtn.style.padding = "10px 16px";
+        reqBtn.innerHTML = `📋 Request to Borrow (Transfer to ${escapeHTML(attendantName)})`;
         reqBtn.addEventListener("click", () => {
             document.getElementById("closeScannerBtn")?.click();
             openRequestModal(equipment);
@@ -790,7 +821,7 @@ window.addEventListener("labtrack:scanned", (e) => {
     } else {
         const unavailBadge = document.createElement("div");
         unavailBadge.innerHTML = `
-            <span class="badge badge-borrowed">
+            <span class="badge badge-borrowed" style="display:inline-block; margin-top:8px;">
                 Currently ${escapeHTML(equipment.status)} - Cannot be requested right now.
             </span>
         `;
