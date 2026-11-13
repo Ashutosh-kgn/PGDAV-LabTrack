@@ -37,3 +37,4 @@
 2. Sign in to [Vercel](https://vercel.com/) and click **Import Project**.
 3. Select this repository and click **Deploy**.
 4. In the **Firebase Console**, add your Vercel domain under **Authentication → Settings → Authorized domains**.
+
