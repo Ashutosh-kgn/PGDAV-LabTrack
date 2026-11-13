@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if current user is Super Admin
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    // Helper: Check if current user is an Approved Lab Assistant
+    function isActiveAssistant() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "lab_assistant"
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    // Helper: Check if current user is an Approved Student
+    function isActiveStudent() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "student"
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    // =========================================================================
+    // 1. User Profiles Collection (/users/{userId})
+    // =========================================================================
+    match /users/{userId} {
+      // Users can read their own profile; Super Admin and Lab Assistants can view profiles
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isActiveAssistant());
+
+      // Profile Creation:
+      // 1. Super Admin can provision Lab Assistants or user accounts
+      // 2. Students can register their own pending account
+      allow create: if (
+        isAdmin()
+      ) || (
+        isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.role == "student"
+        && request.resource.data.active == false
+        && request.resource.data.status == "pending"
+      );
+
+      // Super Admin can approve, activate, update, or delete any profile
+      allow update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 2. Equipment Inventory Collection (/equipment/{equipmentId})
+    // =========================================================================
+    match /equipment/{equipmentId} {
+      // Super Admin, Approved Lab Assistants, and Approved Students can browse equipment
+      allow read: if isAdmin() || isActiveAssistant() || isActiveStudent();
+
+      // Super Admin and Approved Lab Assistants can manage equipment
+      allow create, update, delete: if isAdmin() || isActiveAssistant();
+    }
+
+    // =========================================================================
+    // 3. Borrowing Requests Collection (/requests/{requestId})
+    // =========================================================================
+    match /requests/{requestId} {
+      // Students read their own requests; Admin and Assistants view all lab requests
+      allow read: if isAdmin() || isActiveAssistant() 
+                  || (isAuthenticated() && resource.data.studentUid == request.auth.uid);
+
+      // Students can submit borrowing requests
+      allow create: if isAuthenticated() 
+                    && request.resource.data.studentUid == request.auth.uid;
+
+      // Super Admin and Lab Assistants can approve or reject requests
+      allow update, delete: if isAdmin() || isActiveAssistant();
+    }
+
+    // =========================================================================
+    // 4. Active Loans & Borrowings Collection (/borrowings/{borrowingId})
+    // =========================================================================
+    match /borrowings/{borrowingId} {
+      // Students read their own borrowings; Admin and Assistants view all borrowings
+      allow read: if isAdmin() || isActiveAssistant() 
+                  || (isAuthenticated() && resource.data.studentUid == request.auth.uid);
+
+      // Super Admin and Lab Assistants can issue equipment and process returns
+      allow create, update: if isAdmin() || isActiveAssistant();
+
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 5. Maintenance & Repairs Collection (/maintenance/{maintenanceId})
+    // =========================================================================
+    match /maintenance/{maintenanceId} {
+      // Super Admin and Lab Assistants can report and resolve maintenance issues
+      allow read, create, update: if isAdmin() || isActiveAssistant();
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -2010,13 +2010,13 @@ registerAssistantForm?.addEventListener("submit", async (e) => {
             registeredBy: currentUser?.email || "Super Admin"
         };
 
-        // Write using secDb while authenticated as the assistant (satisfies user self-write security rules)
+        // Try writing with admin db first (Super Admin authority)
         try {
-            await setDoc(doc(secDb, "users", userCred.user.uid), assistantData);
-        } catch (secDbErr) {
-            console.warn("secDb write attempt failed, trying admin db:", secDbErr);
-            // Fallback to admin db (satisfies admin-only rules)
             await setDoc(doc(db, "users", userCred.user.uid), assistantData);
+        } catch (adminDbErr) {
+            console.warn("Admin db write attempt failed, trying secDb:", adminDbErr);
+            // Fallback to secondary db (authenticated as assistant)
+            await setDoc(doc(secDb, "users", userCred.user.uid), assistantData);
         }
 
         // Cleanly sign out secondary session
