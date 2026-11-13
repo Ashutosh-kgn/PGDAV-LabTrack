@@ -4,3 +4,4 @@
     { "source": "/api/generate-qr", "destination": "/api/generate_qr.py" }
   ]
 }
+
