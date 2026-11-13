@@ -6,9 +6,11 @@ import {
     signOut,
     getAuth,
     createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
     signOut as secondarySignOut
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import {
+    getFirestore,
     doc,
     getDoc,
     collection,
@@ -1898,12 +1900,13 @@ pendingStudentsTable?.addEventListener("click", async (e) => {
 // ==========================================================================
 
 let secondaryAuthInstance = null;
-function getSecondaryAuth() {
-    if (!secondaryAuthInstance) {
-        const secApp = initializeApp(firebaseConfig, "AssistantRegApp");
-        secondaryAuthInstance = getAuth(secApp);
+let secondaryAppInstance = null;
+function getSecondaryInstances() {
+    if (!secondaryAppInstance) {
+        secondaryAppInstance = initializeApp(firebaseConfig, "AssistantRegApp");
+        secondaryAuthInstance = getAuth(secondaryAppInstance);
     }
-    return secondaryAuthInstance;
+    return { secApp: secondaryAppInstance, secAuth: secondaryAuthInstance };
 }
 
 const openRegisterAssistantBtn = document.getElementById("openRegisterAssistantBtn");
@@ -1979,11 +1982,22 @@ registerAssistantForm?.addEventListener("submit", async (e) => {
     assistantRegMessage.style.color = "var(--primary)";
 
     try {
-        const secAuth = getSecondaryAuth();
-        const userCred = await createUserWithEmailAndPassword(secAuth, email, password);
-        await secondarySignOut(secAuth);
+        const { secApp, secAuth } = getSecondaryInstances();
+        const secDb = getFirestore(secApp);
 
-        await setDoc(doc(db, "users", userCred.user.uid), {
+        let userCred;
+        try {
+            userCred = await createUserWithEmailAndPassword(secAuth, email, password);
+        } catch (createErr) {
+            if (createErr.code === "auth/email-already-in-use") {
+                // If Auth user was created in a previous attempt, sign in via secAuth to finalize the profile
+                userCred = await signInWithEmailAndPassword(secAuth, email, password);
+            } else {
+                throw createErr;
+            }
+        }
+
+        const assistantData = {
             uid: userCred.user.uid,
             name: name,
             email: email,
@@ -1994,7 +2008,19 @@ registerAssistantForm?.addEventListener("submit", async (e) => {
             createdAt: new Date(),
             approvedAt: new Date(),
             registeredBy: currentUser?.email || "Super Admin"
-        });
+        };
+
+        // Write using secDb while authenticated as the assistant (satisfies user self-write security rules)
+        try {
+            await setDoc(doc(secDb, "users", userCred.user.uid), assistantData);
+        } catch (secDbErr) {
+            console.warn("secDb write attempt failed, trying admin db:", secDbErr);
+            // Fallback to admin db (satisfies admin-only rules)
+            await setDoc(doc(db, "users", userCred.user.uid), assistantData);
+        }
+
+        // Cleanly sign out secondary session
+        await secondarySignOut(secAuth);
 
         showToast(`Lab Assistant ${name} successfully registered for ${department}!`, "success");
         if (registerAssistantModal) registerAssistantModal.style.display = "none";
