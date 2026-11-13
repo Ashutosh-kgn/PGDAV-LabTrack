@@ -61,7 +61,7 @@
                 🛠️ Maintenance <span class="tab-badge" id="tabMaintenanceBadge">0</span>
             </button>
             <button class="tab-btn" data-tab="tab-students" type="button">
-                👥 Students <span class="tab-badge" id="tabStudentsBadge">0</span>
+                👥 Users & Approvals <span class="tab-badge" id="tabStudentsBadge">0</span>
             </button>
         </nav>
 
@@ -179,13 +179,11 @@
                     </div>
 
                     <select id="filterCategory" class="filter-select">
-                        <option value="">All Categories</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Commerce">Commerce</option>
-                        <option value="Stastics">Stastics</option>
-                        <option value="Physical Education">Physical Education</option>
-                        <option value="Library">Library</option>
-                        <option value="Other">Other</option>
+                        <option value="">All Laboratories</option>
+                        <option value="Computer Science Lab">Computer Science Lab</option>
+                        <option value="Commerce Lab">Commerce Lab</option>
+                        <option value="Statistics Lab">Statistics Lab</option>
+                        <option value="Environmental Science Lab">Environmental Science Lab</option>
                     </select>
 
                     <select id="filterStatus" class="filter-select">
@@ -250,10 +248,8 @@
                             <option value="All">All Lab Attendants</option>
                             <option value="Computer Science">Computer Science Lab</option>
                             <option value="Commerce">Commerce Lab</option>
-                            <option value="Stastics">Stastics Lab</option>
-                            <option value="Physical Education">Physical Education Lab</option>
-                            <option value="Library">Library</option>
-                            <option value="General">General Lab</option>
+                            <option value="Statistics">Statistics Lab</option>
+                            <option value="Environmental Science">Environmental Science Lab</option>
                         </select>
                     </div>
                 </div>
@@ -442,6 +438,69 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Pending Lab Assistant Approvals -->
+            <div class="equipment-section" style="margin-top: 2rem;">
+                <div class="section-header">
+                    <div>
+                        <h2>Pending Lab Assistant Registrations</h2>
+                    </div>
+                    <span id="pendingAssistantCount" class="badge badge-pending">0 Pending</span>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Assistant Name</th>
+                                <th>Assigned Laboratory</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="pendingAssistantsTable">
+                            <tr>
+                                <td colspan="5" class="table-empty-state">
+                                    <p>Loading pending lab assistant requests...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approved Lab Assistants Directory -->
+            <div class="equipment-section" style="margin-top: 2rem;">
+                <div class="section-header">
+                    <div>
+                        <h2>Approved Lab Assistants Directory</h2>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Assistant Name</th>
+                                <th>Assigned Laboratory</th>
+                                <th>Email</th>
+                                <th>Account Status</th>
+                                <th>Lab Inventory Count</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="approvedAssistantsTable">
+                            <tr>
+                                <td colspan="5" class="table-empty-state">
+                                    <p>Loading approved lab assistants...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -472,13 +531,11 @@
                 <div class="form-group">
                     <label for="category">Category</label>
                     <select id="category" required>
-                        <option value="">Select Category</option>
-                        <option value="Computer">Computer</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Physics">Physics</option>
-                        <option value="Chemistry">Chemistry</option>
-                        <option value="Biology">Biology</option>
-                        <option value="Other">Other</option>
+                        <option value="">Select Laboratory</option>
+                        <option value="Computer Science Lab">Computer Science Lab</option>
+                        <option value="Commerce Lab">Commerce Lab</option>
+                        <option value="Statistics Lab">Statistics Lab</option>
+                        <option value="Environmental Science Lab">Environmental Science Lab</option>
                     </select>
                 </div>
 

@@ -112,25 +112,54 @@ function validatePasswordMatching() {
 signupPasswordInput?.addEventListener("input", validatePasswordMatching);
 confirmPasswordInput?.addEventListener("input", validatePasswordMatching);
 
-// Student Signup
+// Role switching in signup form
+const signupRole = document.getElementById("signupRole");
+const signupDepartmentGroup = document.getElementById("signupDepartmentGroup");
+const signupDepartmentSelect = document.getElementById("signupDepartment");
+const signupRollNoGroup = document.getElementById("signupRollNoGroup");
+const signupCourseGroup = document.getElementById("signupCourseGroup");
+const signupHeaderTitle = document.getElementById("signupHeaderTitle");
+const signupHeaderSubtitle = document.getElementById("signupHeaderSubtitle");
+const signupBtn = document.getElementById("signupBtn");
+
+signupRole?.addEventListener("change", () => {
+    const isAssistant = signupRole.value === "lab_assistant";
+    if (signupDepartmentGroup) signupDepartmentGroup.style.display = isAssistant ? "block" : "none";
+    if (signupRollNoGroup) signupRollNoGroup.style.display = isAssistant ? "none" : "block";
+    if (signupCourseGroup) signupCourseGroup.style.display = isAssistant ? "none" : "block";
+
+    if (signupHeaderTitle) signupHeaderTitle.textContent = isAssistant ? "Lab Assistant Registration" : "Student Sign Up";
+    if (signupHeaderSubtitle) signupHeaderSubtitle.textContent = isAssistant ? "Register to manage your departmental laboratory." : "Create your LabTrack student account.";
+    if (signupBtn) signupBtn.textContent = isAssistant ? "Register as Lab Assistant" : "Create Student Account";
+});
+
+// Signup Handler
 const signupForm = document.getElementById("signupForm");
 
 if (signupForm) {
     signupForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        const role = signupRole ? signupRole.value : "student";
         const name = document.getElementById("signupName").value.trim();
-        const rollNo = document.getElementById("signupRollNo")?.value.trim() || "";
-        const course = document.getElementById("signupCourse")?.value.trim() || "";
         const email = document.getElementById("signupEmail").value.trim().toLowerCase();
         const password = document.getElementById("signupPassword").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
 
-        const signupMessage = document.getElementById("signupMessage");
-        const signupBtn = document.getElementById("signupBtn");
+        const rollNo = document.getElementById("signupRollNo")?.value.trim() || "";
+        const course = document.getElementById("signupCourse")?.value.trim() || "";
+        const department = signupDepartmentSelect?.value.trim() || "";
 
-        if (!rollNo || !course) {
+        const signupMessage = document.getElementById("signupMessage");
+
+        if (role === "student" && (!rollNo || !course)) {
             signupMessage.textContent = "Please fill in your College Roll Number and Course.";
+            signupMessage.style.color = "var(--danger)";
+            return;
+        }
+
+        if (role === "lab_assistant" && !department) {
+            signupMessage.textContent = "Please select your assigned laboratory.";
             signupMessage.style.color = "var(--danger)";
             return;
         }
@@ -163,7 +192,7 @@ if (signupForm) {
         }
 
         signupBtn.disabled = true;
-        signupMessage.textContent = "Creating student account...";
+        signupMessage.textContent = role === "lab_assistant" ? "Registering Lab Assistant profile..." : "Creating student account...";
         signupMessage.style.color = "var(--primary)";
 
         try {
@@ -175,21 +204,29 @@ if (signupForm) {
 
             const user = userCredential.user;
 
-            await setDoc(doc(db, "users", user.uid), {
+            const userProfile = {
                 name: name,
                 email: email,
-                rollNo: rollNo,
-                course: course,
-                role: "student",
+                role: role,
                 active: false,
                 status: "pending",
                 createdAt: serverTimestamp()
-            });
+            };
+
+            if (role === "student") {
+                userProfile.rollNo = rollNo;
+                userProfile.course = course;
+            } else if (role === "lab_assistant") {
+                userProfile.department = department;
+            }
+
+            await setDoc(doc(db, "users", user.uid), userProfile);
 
             await signOut(auth);
 
-            signupMessage.textContent =
-                "Registration successful! Please wait for admin approval.";
+            signupMessage.textContent = role === "lab_assistant"
+                ? `Registration successful for ${department}! Your account is pending Super-Admin approval.`
+                : "Registration successful! Please wait for admin approval.";
             signupMessage.style.color = "var(--success)";
 
             signupForm.reset();
@@ -258,6 +295,10 @@ if (loginForm) {
                 message.textContent = "Admin login successful! Redirecting...";
                 message.style.color = "var(--success)";
                 window.location.href = "dashboard.html";
+            } else if (userData.role === "lab_assistant") {
+                message.textContent = `Lab Assistant login successful! Accessing ${userData.department || "Laboratory"}...`;
+                message.style.color = "var(--success)";
+                window.location.href = "lab-assistant.html";
             } else if (userData.role === "student") {
                 message.textContent = "Student login successful! Redirecting...";
                 message.style.color = "var(--success)";

@@ -35,7 +35,8 @@
                         <label for="loginRole">Select Your Role</label>
                         <select id="loginRole" required>
                             <option value="">Choose your role</option>
-                            <option value="admin">Admin</option>
+                            <option value="admin">Super Admin</option>
+                            <option value="lab_assistant">Lab Assistant</option>
                             <option value="student">Student</option>
                         </select>
                     </div>
@@ -76,21 +77,29 @@
                 </form>
 
                 <p class="auth-switch">
-                    New student?
-                    <a href="#" id="showSignup">Create an account</a>
+                    Don't have an account?
+                    <a href="#" id="showSignup">Register here</a>
                 </p>
 
             </div>
 
-            <!-- Student Signup Section -->
+            <!-- User Signup Section -->
             <div id="signupSection" style="display: none;">
 
                 <div class="login-heading">
-                    <h2>Student Sign Up</h2>
-                    <p>Create your LabTrack student account.</p>
+                    <h2 id="signupHeaderTitle">Create an Account</h2>
+                    <p id="signupHeaderSubtitle">Register for LabTrack access.</p>
                 </div>
 
                 <form id="signupForm">
+
+                    <div class="form-group">
+                        <label for="signupRole">Register As</label>
+                        <select id="signupRole" required>
+                            <option value="student">Student</option>
+                            <option value="lab_assistant">Lab Assistant</option>
+                        </select>
+                    </div>
 
                     <div class="form-group">
                         <label for="signupName">Full Name</label>
@@ -102,7 +111,18 @@
                         >
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="signupDepartmentGroup" style="display: none;">
+                        <label for="signupDepartment">Assigned Laboratory</label>
+                        <select id="signupDepartment">
+                            <option value="">Select your laboratory</option>
+                            <option value="Computer Science Lab">Computer Science Lab</option>
+                            <option value="Commerce Lab">Commerce Lab</option>
+                            <option value="Statistics Lab">Statistics Lab</option>
+                            <option value="Environmental Science Lab">Environmental Science Lab</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="signupRollNoGroup">
                         <label for="signupRollNo">College Roll Number</label>
                         <input
                             type="text"
@@ -112,7 +132,7 @@
                         >
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="signupCourseGroup">
                         <label for="signupCourse">Course / Department</label>
                         <select id="signupCourse" required>
                             <option value="">Select your course</option>

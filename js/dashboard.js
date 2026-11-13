@@ -318,6 +318,7 @@ function updateDashboardStats() {
 
     const pendingRequestsCount = allRequests.filter(r => r.status === "Pending").length;
     const pendingStudentsCount = allStudents.filter(s => s.role === "student" && s.status === "pending").length;
+    const pendingAssistantsCount = allStudents.filter(s => s.role === "lab_assistant" && s.status === "pending").length;
 
     // Text Content Updates
     const totalEl = document.getElementById("totalEquipment");
@@ -365,7 +366,13 @@ function updateDashboardStats() {
 
     const studBadge = document.getElementById("tabStudentsBadge");
     if (studBadge) {
-        studBadge.textContent = pendingStudentsCount;
+        const totalPendingUsers = pendingStudentsCount + pendingAssistantsCount;
+        studBadge.textContent = totalPendingUsers;
+        if (totalPendingUsers > 0) {
+            studBadge.classList.add("badge-alert");
+        } else {
+            studBadge.classList.remove("badge-alert");
+        }
     }
 
     // Overdue Alert styling
@@ -1712,6 +1719,10 @@ const pendingStudentsTable = document.getElementById("pendingStudentsTable");
 const pendingStudentCount = document.getElementById("pendingStudentCount");
 const approvedStudentsTable = document.getElementById("approvedStudentsTable");
 
+const pendingAssistantsTable = document.getElementById("pendingAssistantsTable");
+const pendingAssistantCount = document.getElementById("pendingAssistantCount");
+const approvedAssistantsTable = document.getElementById("approvedAssistantsTable");
+
 function startPendingStudentsListener() {
     onSnapshot(collection(db, "users"), (snapshot) => {
         allStudents = snapshot.docs.map(docSnap => ({
@@ -1801,6 +1812,84 @@ function renderStudentManagement() {
             }).join("");
         }
     }
+
+    // 3. Pending Lab Assistants
+    const pendingAssistants = allStudents.filter(s => s.role === "lab_assistant" && s.status === "pending");
+    if (pendingAssistantCount) {
+        pendingAssistantCount.textContent = `${pendingAssistants.length} Pending`;
+    }
+
+    if (pendingAssistantsTable) {
+        if (pendingAssistants.length === 0) {
+            pendingAssistantsTable.innerHTML = `
+                <tr>
+                    <td colspan="5" class="table-empty-state">
+                        <p>No pending lab assistant registration requests.</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            pendingAssistantsTable.innerHTML = pendingAssistants.map(a => {
+                const regDate = formatDate(a.createdAt);
+                return `
+                    <tr>
+                        <td><strong>${escapeHTML(a.name || "Lab Assistant")}</strong></td>
+                        <td><span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight: 600;">${escapeHTML(a.department || "Unassigned")}</span></td>
+                        <td>${escapeHTML(a.email || "N/A")}</td>
+                        <td>${regDate}</td>
+                        <td>
+                            <div class="action-btn-group">
+                                <button class="approve-assistant-btn" data-uid="${escapeHTML(a.uid)}">
+                                    Approve
+                                </button>
+                                <button class="reject-assistant-btn" data-uid="${escapeHTML(a.uid)}">
+                                    Reject
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+    }
+
+    // 4. Approved Lab Assistants Directory
+    if (approvedAssistantsTable) {
+        const approvedAssistants = allStudents.filter(s => s.role === "lab_assistant" && s.status === "approved");
+        if (approvedAssistants.length === 0) {
+            approvedAssistantsTable.innerHTML = `
+                <tr>
+                    <td colspan="5" class="table-empty-state">
+                        <p>No approved lab assistants registered yet.</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            approvedAssistantsTable.innerHTML = approvedAssistants.map(a => {
+                const labDept = a.department || "";
+                const labEqCount = allEquipment.filter(e => {
+                    if (!e.category) return false;
+                    const cat = e.category.toLowerCase().trim();
+                    const dep = labDept.toLowerCase().trim();
+                    return cat === dep || cat.includes(dep.replace(" lab", "")) || dep.includes(cat);
+                }).length;
+
+                return `
+                    <tr>
+                        <td><strong>${escapeHTML(a.name || "Lab Assistant")}</strong></td>
+                        <td><span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight: 600;">${escapeHTML(a.department || "Unassigned")}</span></td>
+                        <td>${escapeHTML(a.email || "N/A")}</td>
+                        <td><span class="badge badge-approved">Approved</span></td>
+                        <td>
+                            <span class="badge badge-available">
+                                ${labEqCount} Equipment Item${labEqCount === 1 ? "" : "s"}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+    }
 }
 
 // Student Approval Actions
@@ -1836,6 +1925,50 @@ pendingStudentsTable?.addEventListener("click", async (e) => {
             showToast("Student account rejected.", "info");
         }
     } catch (error) {
+        console.error("Student approval error:", error);
+        showToast("Error updating student status.", "error");
+        btn.disabled = false;
+    }
+});
+
+// Lab Assistant Approval Actions
+pendingAssistantsTable?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+
+    const assistantUid = btn.dataset.uid;
+    const isApprove = btn.classList.contains("approve-assistant-btn");
+    const isReject = btn.classList.contains("reject-assistant-btn");
+    if (!assistantUid || (!isApprove && !isReject)) return;
+
+    const action = isApprove ? "approve" : "reject";
+    const confirmed = confirm(`Are you sure you want to ${action} this lab assistant account?`);
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    try {
+        const assistantRef = doc(db, "users", assistantUid);
+        if (isApprove) {
+            await updateDoc(assistantRef, {
+                active: true,
+                status: "approved",
+                approvedAt: new Date()
+            });
+            showToast("Lab Assistant account approved successfully!", "success");
+        } else {
+            await updateDoc(assistantRef, {
+                active: false,
+                status: "rejected",
+                rejectedAt: new Date()
+            });
+            showToast("Lab Assistant account rejected.", "info");
+        }
+    } catch (error) {
+        console.error("Lab assistant approval error:", error);
+        showToast("Error updating lab assistant status.", "error");
+        btn.disabled = false;
+    }
+});
         console.error("Student approval error:", error);
         showToast("Error updating student status.", "error");
         btn.disabled = false;

@@ -560,7 +560,7 @@ function openRequestModal(equipment) {
     requestEquipmentName.value = equipment.name;
     requestEquipmentMeta.value = `${equipment.category || "General"} • Location: ${equipment.location || "Lab"}`;
 
-    const labAttendant = equipment.category ? `${equipment.category} Lab Attendant` : "General Lab Attendant";
+    const labAttendant = equipment.category ? `${equipment.category} Lab Assistant` : "General Lab Assistant";
     if (requestLabAttendant) requestLabAttendant.value = labAttendant;
     if (requestStudentRollNo) requestStudentRollNo.value = currentStudent?.rollNo || "N/A";
     if (requestStudentCourse) requestStudentCourse.value = currentStudent?.course || "N/A";
@@ -627,7 +627,7 @@ if (requestForm) {
             const formattedFrom = formatDate(rawFromDate);
             const formattedTo = formatDate(rawToDate);
 
-            const assignedAttendant = requestLabAttendant?.value || (eqItem?.category ? `${eqItem.category} Lab Attendant` : "General Lab Attendant");
+            const assignedAttendant = requestLabAttendant?.value || (eqItem?.category ? `${eqItem.category} Lab Assistant` : "General Lab Assistant");
 
             await addDoc(collection(db, "requests"), {
                 equipmentDocId: docId,

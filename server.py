@@ -75,6 +75,7 @@ def run_server():
     print(f"LabTrack Python Server is live at http://localhost:{PORT}/")
     print(f"- Login / Home:         http://localhost:{PORT}/index.html")
     print(f"- Admin Dashboard:      http://localhost:{PORT}/dashboard.html")
+    print(f"- Lab Assistant:        http://localhost:{PORT}/lab-assistant.html")
     print(f"- Student Dashboard:    http://localhost:{PORT}/student.html")
     print(f"- Forgot Password:      http://localhost:{PORT}/forgot-password.html")
     print(f"- Python QR Service:    http://localhost:{PORT}/api/generate-qr")
