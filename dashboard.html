@@ -136,13 +136,13 @@
                         + Add New Equipment
                     </button>
                     <button type="button" class="btn btn-success" id="overviewScanBtn">
-                        📷 Scan Equipment QR
+                        Scan QR
                     </button>
                     <button type="button" class="btn btn-warning" id="overviewReportMaintenanceBtn">
-                        ⚙️ Report Maintenance
+                        Report Maintenance
                     </button>
                     <button type="button" class="btn btn-outline" id="overviewExportCsvBtn">
-                        📥 Export Inventory CSV
+                        Export Inventory CSV
                     </button>
                 </div>
             </div>
@@ -156,7 +156,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Equipment Inventory</h2>
-                        <p>Complete laboratory catalog with real-time availability and QR tracking.</p>
                     </div>
 
                     <div class="section-header-actions">
@@ -164,10 +163,10 @@
                             + Add Equipment
                         </button>
                         <button id="openScannerBtn" type="button" class="btn btn-success">
-                            📷 Scan QR
+                            Scan QR
                         </button>
                         <button id="exportInventoryBtn" type="button" class="btn btn-outline">
-                            📥 Export CSV
+                            Export CSV
                         </button>
                     </div>
                 </div>
@@ -175,18 +174,17 @@
                 <!-- Search and Multi-Filter Bar -->
                 <div class="filter-bar">
                     <div class="search-input-wrapper">
-                        <span class="search-icon">🔍</span>
                         <input type="text" id="searchEquipment"
                             placeholder="Search by equipment name, ID, or location...">
                     </div>
 
                     <select id="filterCategory" class="filter-select">
                         <option value="">All Categories</option>
-                        <option value="Computer">Computer</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Physics">Physics</option>
-                        <option value="Chemistry">Chemistry</option>
-                        <option value="Biology">Biology</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Commerce">Commerce</option>
+                        <option value="Stastics">Stastics</option>
+                        <option value="Physical Education">Physical Education</option>
+                        <option value="Library">Library</option>
                         <option value="Other">Other</option>
                     </select>
 
@@ -240,7 +238,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Student Borrowing Requests</h2>
-                        <p>Review and authorize equipment requests submitted by approved students.</p>
                     </div>
                     <div class="section-header-actions">
                         <select id="filterRequestsStatus" class="filter-select">
@@ -258,9 +255,10 @@
                             <tr>
                                 <th>Student</th>
                                 <th>Equipment</th>
-                                <th>Category</th>
+                                <th>Asset Availability</th>
                                 <th>Requested Period</th>
                                 <th>Purpose / Course</th>
+                                <th>Submitted On</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -268,7 +266,7 @@
 
                         <tbody id="borrowingRequestsTable">
                             <tr>
-                                <td colspan="7" class="table-empty-state">
+                                <td colspan="8" class="table-empty-state">
                                     <p>Loading student borrowing requests...</p>
                                 </td>
                             </tr>
@@ -286,7 +284,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Active Borrowings & Returns</h2>
-                        <p>Track currently issued lab equipment, monitor due dates, and process returns.</p>
                     </div>
 
                     <div class="section-header-actions">
@@ -335,7 +332,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Maintenance & Repairs</h2>
-                        <p>Log equipment issues, track repair progress, and restore equipment to active inventory.</p>
                     </div>
 
                     <button id="reportMaintenanceBtn" type="button" class="btn btn-warning">
@@ -377,7 +373,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Pending Student Registrations</h2>
-                        <p>Review new student account requests before granting laboratory access.</p>
                     </div>
                     <span id="pendingStudentCount" class="badge badge-pending">0 Pending</span>
                 </div>
@@ -409,7 +404,6 @@
                 <div class="section-header">
                     <div>
                         <h2>Approved Students Directory</h2>
-                        <p>Active students authorized to request and borrow laboratory equipment.</p>
                     </div>
                 </div>
 

@@ -1,4 +1,4 @@
-import { auth, db } from "./app.js";
+import { auth, db, isAuthorizedEmail } from "./app.js";
 import { initQrScanner } from "./scanner.js";
 import {
     onAuthStateChanged,
@@ -36,6 +36,119 @@ let currentQrEquipment = null;
 const adminName = document.getElementById("adminName");
 const adminAvatar = document.getElementById("adminAvatar");
 const toastContainer = document.getElementById("toastContainer");
+
+// ==========================================================================
+// DATE FORMATTING & PARSING HELPERS (DD-MM-YYYY ACROSS WHOLE PROJECT)
+// ==========================================================================
+
+/**
+ * Universal Date Formatter: converts any Date, Firestore Timestamp, or string to DD-MM-YYYY
+ */
+export function formatDate(val) {
+    if (!val) return "N/A";
+
+    // Firestore Timestamp
+    if (typeof val.toDate === "function") {
+        const d = val.toDate();
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
+    }
+
+    if (val instanceof Date) {
+        if (isNaN(val.getTime())) return "N/A";
+        const dd = String(val.getDate()).padStart(2, "0");
+        const mm = String(val.getMonth() + 1).padStart(2, "0");
+        const yyyy = val.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
+    }
+
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        // Check if already in DD-MM-YYYY
+        const dmyMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (dmyMatch) {
+            const dd = dmyMatch[1].padStart(2, "0");
+            const mm = dmyMatch[2].padStart(2, "0");
+            const yyyy = dmyMatch[3];
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        // Check if in YYYY-MM-DD
+        const ymdMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (ymdMatch) {
+            const yyyy = ymdMatch[1];
+            const mm = ymdMatch[2].padStart(2, "0");
+            const dd = ymdMatch[3].padStart(2, "0");
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+            const dd = String(parsed.getDate()).padStart(2, "0");
+            const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+            const yyyy = parsed.getFullYear();
+            return `${dd}-${mm}-${yyyy}`;
+        }
+        return trimmed;
+    }
+
+    return String(val);
+}
+
+/**
+ * Universal Date Parser: safely converts DD-MM-YYYY or YYYY-MM-DD to a normalized Date object
+ */
+export function parseDate(val) {
+    if (!val) return new Date();
+    if (typeof val.toDate === "function") {
+        const d = val.toDate();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+    if (val instanceof Date) {
+        const d = new Date(val);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        const dmy = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (dmy) {
+            const d = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        const ymd = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (ymd) {
+            const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+    }
+    const d = new Date(val);
+    d.setHours(0, 0, 0, 0);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
+/**
+ * Get Today's Date in ISO format for HTML5 <input type="date"> value
+ */
+function getTodayDateISO() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get Today's Date in DD-MM-YYYY format
+ */
+function getTodayDateDMY() {
+    return formatDate(new Date());
+}
 
 // ==========================================================================
 // TOAST NOTIFICATION UTILITY
@@ -80,21 +193,19 @@ function escapeHTML(value) {
     })[char]);
 }
 
-// Date Helper: Today YYYY-MM-DD
-function getTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
 // ==========================================================================
 // AUTHENTICATION & ACCESS CONTROL
 // ==========================================================================
 
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    // Verify domain restriction
+    if (!isAuthorizedEmail(user.email)) {
+        await signOut(auth);
         window.location.replace("index.html");
         return;
     }
@@ -198,8 +309,13 @@ function updateDashboardStats() {
         item.status === "Under Maintenance" || item.status === "Maintenance"
     ).length;
 
-    const today = getTodayDate();
-    const overdueCount = allBorrowings.filter(b => b.status === "Active" && b.dueDate < today).length;
+    const todayObj = parseDate(new Date());
+    const overdueCount = allBorrowings.filter(b => {
+        if (b.status !== "Active") return false;
+        const dueObj = parseDate(b.dueDate);
+        return dueObj < todayObj;
+    }).length;
+
     const pendingRequestsCount = allRequests.filter(r => r.status === "Pending").length;
     const pendingStudentsCount = allStudents.filter(s => s.role === "student" && s.status === "pending").length;
 
@@ -283,7 +399,6 @@ const equipmentModalTitle = document.getElementById("equipmentModalTitle");
 const equipmentMessage = document.getElementById("equipmentMessage");
 const saveEquipmentBtn = document.getElementById("saveEquipmentBtn");
 
-// Filter and render table
 function applyEquipmentFilters() {
     const searchVal = (searchEquipment?.value || "").trim().toLowerCase();
     const catVal = filterCategory?.value || "";
@@ -381,6 +496,8 @@ function startEquipmentListener() {
         }));
 
         applyEquipmentFilters();
+        // Synchronize requests and active borrowings
+        renderBorrowingRequestsTable();
         updateDashboardStats();
     }, (error) => {
         console.error("Equipment listener error:", error);
@@ -431,7 +548,6 @@ if (equipmentForm) {
             const equipmentRef = doc(db, "equipment", eqId);
 
             if (editingEquipmentId) {
-                // Update
                 const targetRef = doc(db, "equipment", editingEquipmentId);
                 await updateDoc(targetRef, {
                     name,
@@ -442,10 +558,9 @@ if (equipmentForm) {
                 });
                 showToast(`Equipment ${name} updated successfully!`, "success");
             } else {
-                // Add new
                 const existing = await getDoc(equipmentRef);
                 if (existing.exists()) {
-                    throw new Error(`Equipment ID "${eqId}" is already taken!`);
+                    throw new Error(`Equipment ID "${eqId}" is already registered!`);
                 }
 
                 await setDoc(equipmentRef, {
@@ -481,7 +596,6 @@ equipmentTable?.addEventListener("click", async (e) => {
     const qrBtn = e.target.closest(".qr-btn");
     const issueBtn = e.target.closest(".issue-btn");
 
-    // EDIT
     if (editBtn) {
         const docId = editBtn.dataset.id;
         const item = allEquipment.find(i => i.documentId === docId);
@@ -503,7 +617,6 @@ equipmentTable?.addEventListener("click", async (e) => {
         return;
     }
 
-    // DELETE
     if (deleteBtn) {
         const docId = deleteBtn.dataset.id;
         const item = allEquipment.find(i => i.documentId === docId);
@@ -529,7 +642,6 @@ equipmentTable?.addEventListener("click", async (e) => {
         return;
     }
 
-    // QR CODE MODAL
     if (qrBtn) {
         const docId = qrBtn.dataset.id;
         const item = allEquipment.find(i => i.documentId === docId);
@@ -538,7 +650,6 @@ equipmentTable?.addEventListener("click", async (e) => {
         return;
     }
 
-    // ISSUE MODAL
     if (issueBtn) {
         const docId = issueBtn.dataset.id;
         const item = allEquipment.find(i => i.documentId === docId);
@@ -636,13 +747,15 @@ function openIssueModal(equipment, defaultStudentUid = null) {
     issueEquipmentId.value = equipment.equipmentId;
     issueEquipmentName.value = equipment.name;
 
-    const today = getTodayDate();
-    issueDateInput.value = today;
+    // Set ISO dates for browser pickers
+    issueDateInput.value = getTodayDateISO();
 
-    // Default due date: +7 days
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
-    dueDateInput.value = nextWeek.toISOString().split("T")[0];
+    const yyyy = nextWeek.getFullYear();
+    const mm = String(nextWeek.getMonth() + 1).padStart(2, "0");
+    const dd = String(nextWeek.getDate()).padStart(2, "0");
+    dueDateInput.value = `${yyyy}-${mm}-${dd}`;
 
     if (issueMessage) issueMessage.textContent = "";
 
@@ -686,18 +799,22 @@ if (issueForm) {
 
         const eqDocId = issueEquipmentDocId.value;
         const studentUid = issueStudent.value;
-        const issueDate = issueDateInput.value;
-        const dueDate = dueDateInput.value;
+        const rawIssueDate = issueDateInput.value;
+        const rawDueDate = dueDateInput.value;
 
-        if (!eqDocId || !studentUid || !issueDate || !dueDate) {
+        if (!eqDocId || !studentUid || !rawIssueDate || !rawDueDate) {
             showToast("Please fill all issue fields.", "warning");
             return;
         }
 
-        if (dueDate < issueDate) {
+        if (parseDate(rawDueDate) < parseDate(rawIssueDate)) {
             showToast("Due date cannot be before issue date.", "warning");
             return;
         }
+
+        // Store formatted DD-MM-YYYY dates
+        const formattedIssueDate = formatDate(rawIssueDate);
+        const formattedDueDate = formatDate(rawDueDate);
 
         confirmIssueBtn.disabled = true;
         if (issueMessage) {
@@ -724,7 +841,6 @@ if (issueForm) {
                     throw new Error("This equipment is not available for issue.");
                 }
 
-                // Create borrowing record
                 transaction.set(borrowingRef, {
                     borrowingId: borrowingRef.id,
                     equipmentDocId: eqDocId,
@@ -733,14 +849,13 @@ if (issueForm) {
                     studentUid: studentUid,
                     studentName: stData.name || "Student",
                     studentEmail: stData.email || "",
-                    issueDate: issueDate,
-                    dueDate: dueDate,
+                    issueDate: formattedIssueDate,
+                    dueDate: formattedDueDate,
                     status: "Active",
                     issuedByUid: currentUser?.uid || "",
                     createdAt: new Date()
                 });
 
-                // Update equipment
                 transaction.update(equipmentRef, {
                     status: "Borrowed",
                     currentBorrowingId: borrowingRef.id
@@ -764,7 +879,7 @@ if (issueForm) {
 }
 
 // ==========================================================================
-// ACTIVE BORROWINGS & RETURNS
+// ACTIVE BORROWINGS & RETURNS (SYNCHRONIZED WITH DD-MM-YYYY)
 // ==========================================================================
 
 const activeBorrowingsTable = document.getElementById("activeBorrowingsTable");
@@ -790,6 +905,8 @@ function startActiveBorrowingsListener() {
         }));
 
         renderActiveBorrowingsTable();
+        // Synchronize requests as well
+        renderBorrowingRequestsTable();
         updateDashboardStats();
     }, (error) => {
         console.error("Borrowings error:", error);
@@ -803,15 +920,15 @@ function renderActiveBorrowingsTable() {
     if (!activeBorrowingsTable) return;
 
     const filter = filterLoansStatus?.value || "All";
-    const today = getTodayDate();
+    const todayObj = parseDate(new Date());
 
     const activeList = allBorrowings.filter(b => b.status === "Active");
     let displayList = activeList;
 
     if (filter === "Overdue") {
-        displayList = activeList.filter(b => b.dueDate < today);
+        displayList = activeList.filter(b => parseDate(b.dueDate) < todayObj);
     } else if (filter === "Normal") {
-        displayList = activeList.filter(b => b.dueDate >= today);
+        displayList = activeList.filter(b => parseDate(b.dueDate) >= todayObj);
     }
 
     if (displayList.length === 0) {
@@ -826,11 +943,10 @@ function renderActiveBorrowingsTable() {
     }
 
     activeBorrowingsTable.innerHTML = displayList.map(item => {
-        const isOverdue = item.dueDate < today;
-
-        // Calculate days overdue or remaining
-        const diffMs = new Date(item.dueDate) - new Date(today);
+        const dueObj = parseDate(item.dueDate);
+        const diffMs = dueObj.getTime() - todayObj.getTime();
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        const isOverdue = diffDays < 0;
 
         let statusBadge = '';
         if (isOverdue) {
@@ -850,8 +966,8 @@ function renderActiveBorrowingsTable() {
                     ${escapeHTML(item.studentName)}
                     <div style="font-size: 11px; color: var(--slate-500);">${escapeHTML(item.studentEmail)}</div>
                 </td>
-                <td>${escapeHTML(item.issueDate)}</td>
-                <td>${escapeHTML(item.dueDate)}</td>
+                <td>${formatDate(item.issueDate)}</td>
+                <td><strong>${formatDate(item.dueDate)}</strong></td>
                 <td>${statusBadge}</td>
                 <td>
                     <button class="return-btn" data-id="${escapeHTML(item.documentId)}">
@@ -926,16 +1042,14 @@ if (returnForm) {
                 const borrowingData = bSnap.data();
                 const eqData = eqSnap.data();
 
-                // Update borrowing record
                 transaction.update(borrowingRef, {
                     status: "Returned",
-                    returnDate: getTodayDate(),
+                    returnDate: getTodayDateDMY(),
                     returnCondition: condition,
                     returnNotes: notes,
                     returnedByAdminUid: currentUser?.uid || ""
                 });
 
-                // Update equipment status
                 const newStatus = condition === "Damaged" ? "Under Maintenance" : "Available";
                 transaction.update(equipmentRef, {
                     status: newStatus,
@@ -943,7 +1057,6 @@ if (returnForm) {
                     currentBorrowingId: null
                 });
 
-                // If damaged, automatically log a maintenance ticket
                 if (condition === "Damaged") {
                     const maintRef = doc(collection(db, "maintenance"));
                     transaction.set(maintRef, {
@@ -951,7 +1064,7 @@ if (returnForm) {
                         equipmentId: eqData.equipmentId,
                         equipmentName: eqData.name,
                         description: `Returned damaged by ${borrowingData.studentName}. Notes: ${notes || "No notes provided."}`,
-                        reportDate: getTodayDate(),
+                        reportDate: getTodayDateDMY(),
                         status: "Open",
                         reportedByUid: currentUser?.uid || "",
                         createdAt: new Date()
@@ -975,7 +1088,7 @@ if (returnForm) {
 }
 
 // ==========================================================================
-// STUDENT BORROWING REQUESTS (INCOMING WORKFLOW)
+// TAB 3: BORROWING REQUESTS (SYNCHRONIZED WITH LIVE EQUIPMENT & DATES)
 // ==========================================================================
 
 const borrowingRequestsTable = document.getElementById("borrowingRequestsTable");
@@ -1020,7 +1133,7 @@ function renderBorrowingRequestsTable() {
     if (list.length === 0) {
         borrowingRequestsTable.innerHTML = `
             <tr>
-                <td colspan="7" class="table-empty-state">
+                <td colspan="8" class="table-empty-state">
                     <p>No ${filter.toLowerCase()} equipment requests.</p>
                 </td>
             </tr>
@@ -1030,40 +1143,93 @@ function renderBorrowingRequestsTable() {
 
     borrowingRequestsTable.innerHTML = list.map(req => {
         const isPending = req.status === "Pending";
-        const statusBadge = {
-            "Pending": '<span class="badge badge-pending">Pending Review</span>',
-            "Approved": '<span class="badge badge-approved">Approved & Issued</span>',
-            "Rejected": '<span class="badge badge-rejected">Rejected</span>'
-        }[req.status] || '<span class="badge">Unknown</span>';
+        const isApproved = req.status === "Approved";
+        const isRejected = req.status === "Rejected";
+
+        // Synchronize with LIVE equipment inventory
+        const liveEquipment = allEquipment.find(e =>
+            (req.equipmentDocId && e.documentId === req.equipmentDocId) ||
+            (req.equipmentId && e.equipmentId === req.equipmentId)
+        );
+
+        const liveStatus = liveEquipment ? liveEquipment.status : "Unknown";
+        const isLiveAvailable = liveStatus === "Available";
+
+        const liveStatusBadgeClass = {
+            "Available": "badge-available",
+            "Borrowed": "badge-borrowed",
+            "Under Maintenance": "badge-maintenance",
+            "Maintenance": "badge-maintenance"
+        }[liveStatus] || "badge";
+
+        let statusBadge = '<span class="badge">Unknown</span>';
+        if (isPending) {
+            statusBadge = '<span class="badge badge-pending">Pending Review</span>';
+        } else if (isApproved) {
+            statusBadge = '<span class="badge badge-approved">Approved & Issued</span>';
+        } else if (isRejected) {
+            statusBadge = `<span class="badge badge-rejected" title="${escapeHTML(req.rejectionReason || 'No reason')}">Rejected</span>`;
+        }
+
+        // Format dates as DD-MM-YYYY
+        const formattedFrom = formatDate(req.fromDate);
+        const formattedTo = formatDate(req.toDate);
+        const formattedCreated = formatDate(req.createdAt);
+
+        // Actions column: if item is not available, provide contextual warning
+        let actionCellContent = '';
+        if (isPending) {
+            if (isLiveAvailable) {
+                actionCellContent = `
+                    <div class="action-btn-group">
+                        <button class="btn btn-success btn-sm approve-request-btn" data-id="${escapeHTML(req.documentId)}">
+                            Approve & Issue
+                        </button>
+                        <button class="btn btn-danger btn-sm reject-request-btn" data-id="${escapeHTML(req.documentId)}">
+                            Reject
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionCellContent = `
+                    <div class="action-btn-group">
+                        <span class="badge ${liveStatus === 'Borrowed' ? 'badge-borrowed' : 'badge-maintenance'}" style="font-size: 11px;">
+                            ${liveStatus === 'Borrowed' ? 'Currently on Loan' : 'In Repair'}
+                        </span>
+                        <button class="btn btn-danger btn-sm reject-request-btn" data-id="${escapeHTML(req.documentId)}" title="Reject this request">
+                            Reject
+                        </button>
+                    </div>
+                `;
+            }
+        } else if (isApproved) {
+            actionCellContent = `<span style="font-size: 12px; color: var(--success); font-weight: 600;">✓ Issued</span>`;
+        } else {
+            actionCellContent = `<span style="font-size: 12px; color: var(--slate-400)">Closed</span>`;
+        }
 
         return `
             <tr>
                 <td>
-                    <strong>${escapeHTML(req.studentName)}</strong>
-                    <div style="font-size: 11px; color: var(--slate-500);">${escapeHTML(req.studentEmail)}</div>
+                    <strong>${escapeHTML(req.studentName || "Student")}</strong>
+                    <div style="font-size: 11px; color: var(--slate-500);">${escapeHTML(req.studentEmail || "")}</div>
                 </td>
                 <td>
-                    <strong>${escapeHTML(req.equipmentName)}</strong>
-                    <div class="mono-id" style="font-size: 11px;">${escapeHTML(req.equipmentId)}</div>
+                    <strong>${escapeHTML(req.equipmentName || "Equipment")}</strong>
+                    <div class="mono-id" style="font-size: 11px;">${escapeHTML(req.equipmentId || "")}</div>
                 </td>
-                <td>${escapeHTML(req.category || "General")}</td>
                 <td>
-                    ${escapeHTML(req.fromDate)} <span style="color: var(--slate-400)">to</span> ${escapeHTML(req.toDate)}
+                    <span class="badge ${liveStatusBadgeClass}">
+                        ${escapeHTML(liveStatus)}
+                    </span>
+                </td>
+                <td>
+                    ${formattedFrom} <span style="color: var(--slate-400)">to</span> ${formattedTo}
                 </td>
                 <td>${escapeHTML(req.purpose || "Academic Lab")}</td>
+                <td>${formattedCreated}</td>
                 <td>${statusBadge}</td>
-                <td>
-                    ${isPending ? `
-                        <div class="action-btn-group">
-                            <button class="btn btn-success btn-sm approve-request-btn" data-id="${escapeHTML(req.documentId)}">
-                                Approve & Issue
-                            </button>
-                            <button class="btn btn-danger btn-sm reject-request-btn" data-id="${escapeHTML(req.documentId)}">
-                                Reject
-                            </button>
-                        </div>
-                    ` : `<span style="font-size: 12px; color: var(--slate-400)">Closed</span>`}
-                </td>
+                <td>${actionCellContent}</td>
             </tr>
         `;
     }).join("");
@@ -1082,7 +1248,7 @@ borrowingRequestsTable?.addEventListener("click", async (e) => {
         approveBtn.disabled = true;
 
         try {
-            const equipmentRef = doc(db, "equipment", req.equipmentDocId);
+            const equipmentRef = doc(db, "equipment", req.equipmentDocId || req.equipmentId);
             const requestRef = doc(db, "requests", reqId);
             const borrowingRef = doc(collection(db, "borrowings"));
 
@@ -1090,13 +1256,17 @@ borrowingRequestsTable?.addEventListener("click", async (e) => {
                 const eqSnap = await transaction.get(equipmentRef);
                 const reqSnap = await transaction.get(requestRef);
 
-                if (!eqSnap.exists()) throw new Error("Equipment no longer exists.");
-                if (!reqSnap.exists()) throw new Error("Request no longer exists.");
+                if (!eqSnap.exists()) throw new Error("Equipment record not found.");
+                if (!reqSnap.exists()) throw new Error("Request record no longer exists.");
 
                 const eqData = eqSnap.data();
                 if (eqData.status !== "Available") {
                     throw new Error(`Equipment is currently ${eqData.status}. Cannot approve request.`);
                 }
+
+                // Format dates in DD-MM-YYYY
+                const issueDateFormatted = formatDate(req.fromDate) || getTodayDateDMY();
+                const dueDateFormatted = formatDate(req.toDate) || getTodayDateDMY();
 
                 // 1. Mark request Approved
                 transaction.update(requestRef, {
@@ -1108,14 +1278,14 @@ borrowingRequestsTable?.addEventListener("click", async (e) => {
                 // 2. Create active borrowing
                 transaction.set(borrowingRef, {
                     borrowingId: borrowingRef.id,
-                    equipmentDocId: req.equipmentDocId,
-                    equipmentId: req.equipmentId,
-                    equipmentName: req.equipmentName,
+                    equipmentDocId: req.equipmentDocId || equipmentRef.id,
+                    equipmentId: req.equipmentId || eqData.equipmentId,
+                    equipmentName: req.equipmentName || eqData.name,
                     studentUid: req.studentUid,
-                    studentName: req.studentName,
-                    studentEmail: req.studentEmail,
-                    issueDate: req.fromDate || getTodayDate(),
-                    dueDate: req.toDate,
+                    studentName: req.studentName || "Student",
+                    studentEmail: req.studentEmail || "",
+                    issueDate: issueDateFormatted,
+                    dueDate: dueDateFormatted,
                     status: "Active",
                     purpose: req.purpose || "",
                     issuedByUid: currentUser?.uid || "",
@@ -1211,6 +1381,7 @@ function startMaintenanceListener() {
         }));
 
         renderMaintenanceTable();
+        renderBorrowingRequestsTable();
         updateDashboardStats();
     }, (error) => {
         console.error("Maintenance listener error:", error);
@@ -1242,7 +1413,7 @@ function renderMaintenanceTable() {
                 <td><span class="mono-id">${escapeHTML(item.equipmentId)}</span></td>
                 <td><strong>${escapeHTML(item.equipmentName)}</strong></td>
                 <td>${escapeHTML(item.description)}</td>
-                <td>${escapeHTML(item.reportDate)}</td>
+                <td>${formatDate(item.reportDate)}</td>
                 <td>${statusBadge}</td>
                 <td>
                     ${!isResolved ? `
@@ -1256,7 +1427,6 @@ function renderMaintenanceTable() {
     }).join("");
 }
 
-// Populate Eligible Equipment Dropdown
 function loadMaintenanceEquipmentDropdown() {
     if (!maintenanceSelect) return;
     maintenanceSelect.innerHTML = `<option value="">Select Equipment</option>`;
@@ -1272,7 +1442,7 @@ function loadMaintenanceEquipmentDropdown() {
 
 reportMaintenanceBtn?.addEventListener("click", () => {
     maintenanceForm.reset();
-    if (maintenanceDate) maintenanceDate.value = getTodayDate();
+    if (maintenanceDate) maintenanceDate.value = getTodayDateISO();
     if (maintenanceMessage) maintenanceMessage.textContent = "";
     loadMaintenanceEquipmentDropdown();
     maintenanceModal.style.display = "flex";
@@ -1291,12 +1461,14 @@ if (maintenanceForm) {
 
         const eqDocId = maintenanceSelect.value;
         const desc = maintenanceDescription.value.trim();
-        const date = maintenanceDate.value;
+        const rawDate = maintenanceDate.value;
 
-        if (!eqDocId || !desc || !date) {
+        if (!eqDocId || !desc || !rawDate) {
             showToast("Please fill all maintenance report fields.", "warning");
             return;
         }
+
+        const formattedDate = formatDate(rawDate);
 
         saveMaintenanceBtn.disabled = true;
         try {
@@ -1317,7 +1489,7 @@ if (maintenanceForm) {
                     equipmentId: eq.equipmentId,
                     equipmentName: eq.name,
                     description: desc,
-                    reportDate: date,
+                    reportDate: formattedDate,
                     status: "Open",
                     reportedByUid: currentUser?.uid || "",
                     createdAt: new Date()
@@ -1386,7 +1558,7 @@ maintenanceTable?.addEventListener("click", async (e) => {
 });
 
 // ==========================================================================
-// STUDENT MANAGEMENT & APPROVALS
+// STUDENT MANAGEMENT & APPROVALS (SYNCHRONIZED DATES)
 // ==========================================================================
 
 const pendingStudentsTable = document.getElementById("pendingStudentsTable");
@@ -1401,6 +1573,7 @@ function startPendingStudentsListener() {
         }));
 
         renderStudentManagement();
+        renderBorrowingRequestsTable();
         updateDashboardStats();
     }, (error) => {
         console.error("Users listener error:", error);
@@ -1425,10 +1598,7 @@ function renderStudentManagement() {
             `;
         } else {
             pendingStudentsTable.innerHTML = pendingList.map(s => {
-                let regDate = "N/A";
-                if (s.createdAt?.toDate) {
-                    regDate = s.createdAt.toDate().toLocaleDateString();
-                }
+                const regDate = formatDate(s.createdAt);
 
                 return `
                     <tr>
@@ -1554,7 +1724,6 @@ window.addEventListener("labtrack:scanned", (e) => {
         }
     }
 
-    // Always allow reporting maintenance
     const maintActionBtn = document.createElement("button");
     maintActionBtn.className = "btn btn-warning btn-sm";
     maintActionBtn.textContent = "Report Issue";
@@ -1569,7 +1738,7 @@ window.addEventListener("labtrack:scanned", (e) => {
 });
 
 // ==========================================================================
-// CSV EXPORT UTILITIES
+// CSV EXPORT UTILITIES (DD-MM-YYYY)
 // ==========================================================================
 
 function exportInventoryCSV() {
@@ -1589,7 +1758,7 @@ function exportInventoryCSV() {
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    downloadCSV(csvContent, `LabTrack-Inventory-${getTodayDate()}.csv`);
+    downloadCSV(csvContent, `LabTrack-Inventory-${getTodayDateDMY()}.csv`);
     showToast("Inventory exported to CSV successfully!", "success");
 }
 
@@ -1600,19 +1769,21 @@ function exportLoansCSV() {
         return;
     }
 
-    const headers = ["Equipment ID", "Equipment Name", "Student Name", "Student Email", "Issue Date", "Due Date", "Status"];
+    const todayObj = parseDate(new Date());
+
+    const headers = ["Equipment ID", "Equipment Name", "Student Name", "Student Email", "Issue Date (DD-MM-YYYY)", "Due Date (DD-MM-YYYY)", "Status"];
     const rows = activeLoans.map(item => [
         `"${item.equipmentId || ''}"`,
         `"${(item.equipmentName || '').replace(/"/g, '""')}"`,
         `"${item.studentName || ''}"`,
         `"${item.studentEmail || ''}"`,
-        `"${item.issueDate || ''}"`,
-        `"${item.dueDate || ''}"`,
-        `"${item.dueDate < getTodayDate() ? 'Overdue' : 'Active'}"`
+        `"${formatDate(item.issueDate)}"`,
+        `"${formatDate(item.dueDate)}"`,
+        `"${parseDate(item.dueDate) < todayObj ? 'Overdue' : 'Active'}"`
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    downloadCSV(csvContent, `LabTrack-ActiveLoans-${getTodayDate()}.csv`);
+    downloadCSV(csvContent, `LabTrack-ActiveLoans-${getTodayDateDMY()}.csv`);
     showToast("Active loans exported to CSV!", "success");
 }
 

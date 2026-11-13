@@ -1,4 +1,4 @@
-import { auth, db } from "./app.js";
+import { auth, db, isAuthorizedEmail } from "./app.js";
 import { initQrScanner } from "./scanner.js";
 import {
     onAuthStateChanged,
@@ -27,6 +27,108 @@ let myRequests = [];
 const studentName = document.getElementById("studentName");
 const studentAvatar = document.getElementById("studentAvatar");
 const toastContainer = document.getElementById("toastContainer");
+
+// ==========================================================================
+// DATE FORMATTING & PARSING HELPERS (DD-MM-YYYY ACROSS WHOLE PROJECT)
+// ==========================================================================
+
+/**
+ * Universal Date Formatter: converts any Date, Firestore Timestamp, or string to DD-MM-YYYY
+ */
+export function formatDate(val) {
+    if (!val) return "N/A";
+
+    if (typeof val.toDate === "function") {
+        const d = val.toDate();
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
+    }
+
+    if (val instanceof Date) {
+        if (isNaN(val.getTime())) return "N/A";
+        const dd = String(val.getDate()).padStart(2, "0");
+        const mm = String(val.getMonth() + 1).padStart(2, "0");
+        const yyyy = val.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
+    }
+
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        // Check if already in DD-MM-YYYY
+        const dmyMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (dmyMatch) {
+            const dd = dmyMatch[1].padStart(2, "0");
+            const mm = dmyMatch[2].padStart(2, "0");
+            const yyyy = dmyMatch[3];
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        // Check if in YYYY-MM-DD
+        const ymdMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (ymdMatch) {
+            const yyyy = ymdMatch[1];
+            const mm = ymdMatch[2].padStart(2, "0");
+            const dd = ymdMatch[3].padStart(2, "0");
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+            const dd = String(parsed.getDate()).padStart(2, "0");
+            const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+            const yyyy = parsed.getFullYear();
+            return `${dd}-${mm}-${yyyy}`;
+        }
+        return trimmed;
+    }
+
+    return String(val);
+}
+
+/**
+ * Universal Date Parser: safely converts DD-MM-YYYY or YYYY-MM-DD to a normalized Date object
+ */
+export function parseDate(val) {
+    if (!val) return new Date();
+    if (typeof val.toDate === "function") {
+        const d = val.toDate();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+    if (val instanceof Date) {
+        const d = new Date(val);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        const dmy = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+        if (dmy) {
+            const d = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        const ymd = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (ymd) {
+            const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+    }
+    const d = new Date(val);
+    d.setHours(0, 0, 0, 0);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
+function getTodayDateISO() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
 
 // ==========================================================================
 // TOAST NOTIFICATIONS & HELPERS
@@ -70,14 +172,6 @@ function escapeHTML(value) {
     })[char]);
 }
 
-function getTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
 // ==========================================================================
 // TAB NAVIGATION
 // ==========================================================================
@@ -109,6 +203,13 @@ function switchTab(tabId) {
 
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    // Verify institutional domain
+    if (!isAuthorizedEmail(user.email)) {
+        await signOut(auth);
         window.location.replace("index.html");
         return;
     }
@@ -171,11 +272,15 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
 function updateStudentStats() {
     const available = allEquipment.filter(item => item.status === "Available").length;
     const activeLoans = myBorrowings.filter(b => b.status === "Active");
-    const today = getTodayDate();
-    const overdueLoans = activeLoans.filter(b => b.dueDate < today);
+    const todayObj = parseDate(new Date());
+
+    const overdueLoans = activeLoans.filter(b => {
+        const dueObj = parseDate(b.dueDate);
+        return dueObj < todayObj;
+    });
+
     const pendingReqs = myRequests.filter(r => r.status === "Pending");
 
-    // Text counters
     const availEl = document.getElementById("availableEquipment");
     if (availEl) availEl.textContent = available;
 
@@ -188,7 +293,6 @@ function updateStudentStats() {
     const overdueEl = document.getElementById("myOverdueCount");
     if (overdueEl) overdueEl.textContent = overdueLoans.length;
 
-    // Badges on tabs
     const loansBadge = document.getElementById("tabLoansBadge");
     if (loansBadge) loansBadge.textContent = activeLoans.length;
 
@@ -198,7 +302,6 @@ function updateStudentStats() {
     const requestsBadge = document.getElementById("tabRequestsBadge");
     if (requestsBadge) requestsBadge.textContent = pendingReqs.length;
 
-    // Overdue Alert Styling
     const overdueCard = document.getElementById("studentOverdueCard");
     if (overdueCard) {
         if (overdueLoans.length > 0) {
@@ -212,7 +315,7 @@ function updateStudentStats() {
 }
 
 // ==========================================================================
-// TAB 1: MY ACTIVE BORROWINGS & TAB 4: BORROWING HISTORY
+// TAB 1: MY ACTIVE BORROWINGS & TAB 4: BORROWING HISTORY (DD-MM-YYYY)
 // ==========================================================================
 
 const myActiveBorrowingsTable = document.getElementById("myActiveBorrowingsTable");
@@ -240,7 +343,7 @@ function startMyBorrowingsListener() {
 }
 
 function renderMyBorrowings() {
-    const today = getTodayDate();
+    const todayObj = parseDate(new Date());
     const active = myBorrowings.filter(b => b.status === "Active");
     const history = myBorrowings.filter(b => b.status === "Returned");
 
@@ -256,9 +359,10 @@ function renderMyBorrowings() {
             `;
         } else {
             myActiveBorrowingsTable.innerHTML = active.map(item => {
-                const isOverdue = item.dueDate < today;
-                const diffMs = new Date(item.dueDate) - new Date(today);
+                const dueObj = parseDate(item.dueDate);
+                const diffMs = dueObj.getTime() - todayObj.getTime();
                 const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                const isOverdue = diffDays < 0;
 
                 let remainingBadge = '';
                 if (isOverdue) {
@@ -270,7 +374,6 @@ function renderMyBorrowings() {
                     remainingBadge = `<span class="badge badge-approved">${diffDays} day${diffDays === 1 ? '' : 's'} remaining</span>`;
                 }
 
-                // Match location from catalog if available
                 const catalogItem = allEquipment.find(e => e.equipmentId === item.equipmentId);
                 const returnLocation = catalogItem?.location || "Main Laboratory Desk";
 
@@ -278,8 +381,8 @@ function renderMyBorrowings() {
                     <tr>
                         <td><span class="mono-id">${escapeHTML(item.equipmentId)}</span></td>
                         <td><strong>${escapeHTML(item.equipmentName)}</strong></td>
-                        <td>${escapeHTML(item.issueDate)}</td>
-                        <td><strong>${escapeHTML(item.dueDate)}</strong></td>
+                        <td>${formatDate(item.issueDate)}</td>
+                        <td><strong>${formatDate(item.dueDate)}</strong></td>
                         <td>${remainingBadge}</td>
                         <td>${escapeHTML(returnLocation)}</td>
                     </tr>
@@ -310,9 +413,9 @@ function renderMyBorrowings() {
                     <tr>
                         <td><span class="mono-id">${escapeHTML(item.equipmentId)}</span></td>
                         <td><strong>${escapeHTML(item.equipmentName)}</strong></td>
-                        <td>${escapeHTML(item.issueDate)}</td>
-                        <td>${escapeHTML(item.dueDate)}</td>
-                        <td>${escapeHTML(item.returnDate || "N/A")}</td>
+                        <td>${formatDate(item.issueDate)}</td>
+                        <td>${formatDate(item.dueDate)}</td>
+                        <td>${formatDate(item.returnDate)}</td>
                         <td><span class="badge ${condClass}">${escapeHTML(item.returnCondition || "Good")}</span></td>
                     </tr>
                 `;
@@ -452,13 +555,14 @@ function openRequestModal(equipment) {
     requestEquipmentName.value = equipment.name;
     requestEquipmentMeta.value = `${equipment.category || "Lab"} • Location: ${equipment.location || "Lab"}`;
 
-    const today = getTodayDate();
-    requestFromDate.value = today;
+    requestFromDate.value = getTodayDateISO();
 
-    // Default return date: +3 days
     const defReturn = new Date();
     defReturn.setDate(defReturn.getDate() + 3);
-    requestToDate.value = defReturn.toISOString().split("T")[0];
+    const yyyy = defReturn.getFullYear();
+    const mm = String(defReturn.getMonth() + 1).padStart(2, "0");
+    const dd = String(defReturn.getDate()).padStart(2, "0");
+    requestToDate.value = `${yyyy}-${mm}-${dd}`;
 
     if (requestMessage) requestMessage.textContent = "";
 
@@ -480,21 +584,20 @@ if (requestForm) {
         const docId = requestEquipmentDocId.value;
         const eqId = requestEquipmentId.value;
         const eqName = requestEquipmentName.value;
-        const fromDate = requestFromDate.value;
-        const toDate = requestToDate.value;
+        const rawFromDate = requestFromDate.value;
+        const rawToDate = requestToDate.value;
         const purpose = requestPurpose.value.trim();
 
-        if (!docId || !fromDate || !toDate || !purpose) {
+        if (!docId || !rawFromDate || !rawToDate || !purpose) {
             showToast("Please fill all request fields.", "warning");
             return;
         }
 
-        if (toDate < fromDate) {
+        if (parseDate(rawToDate) < parseDate(rawFromDate)) {
             showToast("Return date cannot be earlier than start date.", "warning");
             return;
         }
 
-        // Check if student already has a pending request for this item
         const existingPending = myRequests.find(r => r.equipmentDocId === docId && r.status === "Pending");
         if (existingPending) {
             showToast("You already have a pending request for this equipment.", "warning");
@@ -510,6 +613,10 @@ if (requestForm) {
         try {
             const eqItem = allEquipment.find(i => i.documentId === docId);
 
+            // Store formatted dates DD-MM-YYYY
+            const formattedFrom = formatDate(rawFromDate);
+            const formattedTo = formatDate(rawToDate);
+
             await addDoc(collection(db, "requests"), {
                 equipmentDocId: docId,
                 equipmentId: eqId,
@@ -519,8 +626,8 @@ if (requestForm) {
                 studentUid: currentStudent.uid,
                 studentName: currentStudent.name,
                 studentEmail: currentStudent.email,
-                fromDate: fromDate,
-                toDate: toDate,
+                fromDate: formattedFrom,
+                toDate: formattedTo,
                 purpose: purpose,
                 status: "Pending",
                 createdAt: new Date()
@@ -543,7 +650,7 @@ if (requestForm) {
 }
 
 // ==========================================================================
-// TAB 3: MY REQUESTS TRACKER
+// TAB 3: MY REQUESTS TRACKER (DD-MM-YYYY)
 // ==========================================================================
 
 const myRequestsTable = document.getElementById("myRequestsTable");
@@ -597,16 +704,15 @@ function renderMyRequestsTable() {
             statusBadge = `<span class="badge badge-rejected" title="${escapeHTML(req.rejectionReason || 'No reason specified')}">Rejected</span>`;
         }
 
-        let subDate = "Recently";
-        if (req.createdAt?.toDate) {
-            subDate = req.createdAt.toDate().toLocaleDateString();
-        }
+        const formattedFrom = formatDate(req.fromDate);
+        const formattedTo = formatDate(req.toDate);
+        const subDate = formatDate(req.createdAt);
 
         return `
             <tr>
                 <td><span class="mono-id">${escapeHTML(req.equipmentId)}</span></td>
                 <td><strong>${escapeHTML(req.equipmentName)}</strong></td>
-                <td>${escapeHTML(req.fromDate)} <span style="color: var(--slate-400)">to</span> ${escapeHTML(req.toDate)}</td>
+                <td>${formattedFrom} <span style="color: var(--slate-400)">to</span> ${formattedTo}</td>
                 <td>
                     ${escapeHTML(req.purpose)}
                     ${isRejected && req.rejectionReason ? `
@@ -659,14 +765,13 @@ window.addEventListener("labtrack:scanned", (e) => {
 
     actionsContainer.innerHTML = "";
 
-    // Check if this student currently has it borrowed
     const myActiveItem = myBorrowings.find(b => b.equipmentId === equipment.equipmentId && b.status === "Active");
 
     if (myActiveItem) {
         const infoBadge = document.createElement("div");
         infoBadge.innerHTML = `
             <div style="background: var(--primary-light); color: var(--primary); padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;">
-                ✓ This equipment is currently checked out to you! Due: ${escapeHTML(myActiveItem.dueDate)}
+                ✓ This equipment is currently checked out to you! Due: ${formatDate(myActiveItem.dueDate)}
             </div>
         `;
         actionsContainer.appendChild(infoBadge);
