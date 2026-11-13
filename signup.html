@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PGDAV LabTrack | Student Registration</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <main class="login-container">
+
+        <section class="login-card" style="max-width: 480px;">
+
+            <div class="brand">
+                <div class="brand-icon">QR</div>
+                <h1>PGDAV LabTrack</h1>
+            </div>
+
+            <!-- Student Signup Section -->
+            <div id="signupSection">
+
+                <div class="login-heading">
+                    <h2>Student Registration</h2>
+                    <p>Register for PGDAV LabTrack student access.</p>
+                </div>
+
+                <form id="signupForm">
+
+                    <div class="form-group">
+                        <label for="signupName">Full Name</label>
+                        <input
+                            type="text"
+                            id="signupName"
+                            placeholder="Enter your full name"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group" id="signupRollNoGroup">
+                        <label for="signupRollNo">College Roll Number</label>
+                        <input
+                            type="text"
+                            id="signupRollNo"
+                            placeholder="Example: 21/0458"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group" id="signupCourseGroup">
+                        <label for="signupCourse">Course / Department</label>
+                        <select id="signupCourse" required>
+                            <option value="">Select your course</option>
+                            <option value="B.Sc. (Hons) Computer Science">B.Sc. (Hons) Computer Science</option>
+                            <option value="B.Sc. (Hons) Mathematics">B.Sc. (Hons) Mathematics</option>
+                            <option value="B.Sc. (Hons) Statistics">B.Sc. (Hons) Statistics</option>
+                            <option value="B.Sc. Physical Sciences (Computer)">B.Sc. Physical Sciences (Computer)</option>
+                            <option value="B.Sc. Physical Sciences (Chemistry)">B.Sc. Physical Sciences (Chemistry)</option>
+                            <option value="B.A. Programme">B.A. Programme</option>
+                            <option value="B.Com (Hons)">B.Com (Hons)</option>
+                            <option value="Other">Other Department</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupEmail">Email Address</label>
+                        <input
+                            type="email"
+                            id="signupEmail"
+                            placeholder="Enter your email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="signupPassword"
+                                placeholder="Create a password (min 6 characters)"
+                                minlength="6"
+                                required
+                            >
+                            <button type="button" class="toggle-password-btn" id="toggleSignupPassword" title="Show/Hide password">👁️</button>
+                        </div>
+                        <div class="password-constraint-hint">
+                            Must be at least 6 characters with a letter and a number.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="confirmPassword"
+                                placeholder="Confirm your password"
+                                minlength="6"
+                                required
+                            >
+                            <button type="button" class="toggle-password-btn" id="toggleConfirmPassword" title="Show/Hide password">👁️</button>
+                        </div>
+                        <div class="password-match-indicator" id="passwordMatchIndicator"></div>
+                    </div>
+
+                    <button type="submit" id="signupBtn">
+                        Register Student Account
+                    </button>
+
+                    <p id="signupMessage"></p>
+
+                </form>
+
+                <p class="auth-switch">
+                    Already have an account?
+                    <a href="index.html">Login here</a>
+                </p>
+
+            </div>
+
+            <div class="login-footer">
+                <p>PGDAV LabTrack • Laboratory Equipment Management System</p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script type="module" src="js/signup.js"></script>
+
+</body>
+</html>

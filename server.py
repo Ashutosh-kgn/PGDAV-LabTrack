@@ -74,6 +74,7 @@ def run_server():
     httpd = HTTPServer(server_address, LabTrackHandler)
     print(f"PGDAV LabTrack Python Server is live at http://localhost:{PORT}/")
     print(f"- Login / Home:         http://localhost:{PORT}/index.html")
+    print(f"- Student Sign-Up:      http://localhost:{PORT}/signup.html")
     print(f"- Admin Dashboard:      http://localhost:{PORT}/dashboard.html")
     print(f"- Lab Assistant:        http://localhost:{PORT}/lab-assistant.html")
     print(f"- Student Dashboard:    http://localhost:{PORT}/student.html")

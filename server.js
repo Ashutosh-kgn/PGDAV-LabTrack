@@ -98,6 +98,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, '127.0.0.1', () => {
     console.log(`PGDAV LabTrack server is live at http://localhost:${PORT}/`);
     console.log(`- Login / Home:         http://localhost:${PORT}/index.html`);
+    console.log(`- Student Sign-Up:      http://localhost:${PORT}/signup.html`);
     console.log(`- Admin Dashboard:      http://localhost:${PORT}/dashboard.html`);
     console.log(`- Lab Assistant:        http://localhost:${PORT}/lab-assistant.html`);
     console.log(`- Student Dashboard:    http://localhost:${PORT}/student.html`);
