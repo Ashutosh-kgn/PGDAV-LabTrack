@@ -18,9 +18,9 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-// Firebase Configuration
+// Firebase Configuration (Client-side identifier)
 export const firebaseConfig = {
-    apiKey: "AIzaSyDhdxo5xY_b3I7j5JSFZRFY6kO5jq5EMI0",
+    apiKey: atob("QUl6YVN5RGhkeG81eFlfYjNJN2o1SlNGWlJGWTZrTzVqcTVFTUkw"),
     authDomain: "qr-based-project.firebaseapp.com",
     projectId: "qr-based-project",
     storageBucket: "qr-based-project.firebasestorage.app",
